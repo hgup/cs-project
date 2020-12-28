@@ -18,13 +18,16 @@ class Block(pygame.sprite.Sprite):
     def __init__(self, _id, value, level):
         super().__init__()
         self.pos = _id
+        self.value = int(value)
         self.sprites = SpriteImages.levels[level]
-        self.image = self.sprites[int(value)]
+        self.image = self.sprites[self.value]
         #----------- UPDATING THE RECT ---------------------#
         self.rect = self.image.get_rect()
         self.rect.x = self.pos[0] * 40
         self.rect.y = self.pos[1] * 40
-        print(self.rect)
+
+    def update(self):
+        self.image = self.sprites[self.value]
 
 class MapEditor:
     def __init__(self):
@@ -33,7 +36,7 @@ class MapEditor:
         self.path = r'./WorldData/Level ' +str(self.level)+ r'/'
         self.map = numpy.ones((36,64))
         self.map_coords_x = numpy.arange(64) * 40
-        self.map_coords_y = numpy.arange(36) * 40
+        self.map_coords_y = numpy.arange(36) * 43
         self.cam = pygame.math.Vector2(0,0)
         self.sprites = SpriteImages.levels[self.level]
         #------------------ PYGAME STUFF -------------------#
@@ -48,6 +51,59 @@ class MapEditor:
         self.loadMap()
         self.loadBlocks()
         self.mainloop()
+    #====================== MAIN ========================# 
+    #====================================================#
+    def mainloop(self):
+        while self.running:
+            #-------------- EVENTS AND UPDATES -------------#
+            self.events()
+            self.update()
+            #-------------------- DRAWING ------------------#
+            self.screen.fill((0,0,0))
+            self.drawMap()
+            self.drawHud()
+            self.blockGroup.draw(self.canvas)
+            self.drawGridLines()
+            self.screen.blit(self.canvas, (200,50))
+            #------------------ UPDATE AND TICK ------------#
+            pygame.display.update()
+            self.fpsClock.tick(self.settings.fps)
+
+    def events(self):
+        for event in pygame.event.get():
+            #---------------- KEYBOARD EVENTS --------------#
+            if event.type == QUIT:
+                self.running = False
+            if event.type == KEYUP:
+                if event.key == K_g:
+                    self.showGridLines = not self.showGridLines
+            #------------------- MOUSE EVENTS --------------#
+            if event.type == MOUSEBUTTONDOWN:
+                if event.button == 2:
+                    self.scrolling = True
+                    pygame.mouse.get_rel()
+            if event.type == MOUSEBUTTONUP:
+                if event.button == 2:
+                    self.scrolling = False
+
+    def update(self):
+        if self.scrolling:
+            self.cam += pygame.mouse.get_rel()
+        # update the map
+
+    def loadBlocks(self):
+        #-------------- CREATING Block OBJECTS -------------#
+        self.blocks = []
+        self.blockGroup = pygame.sprite.Group()
+        for y in range(36):
+            self.blocks.append([])
+            for x in range(64):
+                k = Block((x,y),self.map[y][x],self.level)
+                self.blocks[y].append(k)
+                self.blockGroup.add(k)
+
+    #==================== FILE HANDLING ====================#
+    #=======================================================#
 
     def loadMap(self):
         # --------------- self.map IS CREATED --------------#
@@ -63,54 +119,13 @@ class MapEditor:
                 pickle.dump(self.map,f)
         self.map[10][10] = 2
 
-    def loadBlocks(self):
-        #-------------- CREATING Block OBJECTS -------------#
-        self.blocks = pygame.sprite.Group()
-        for y in range(36):
-            for x in range(64):
-                self.blocks.add(Block((x,y),self.map[y][x],self.level))
-
     def writeMap(self):
         with open(self.path + 'map.dat','wb+') as f:
             pickle.dump(self.map,f)
 
-    def mainloop(self):
-        while self.running:
-            #----------- EVENTS AND UPDATES -------------#
-            self.events()
-            self.update()
-            #----------------- DRAWING ------------------#
-            self.screen.fill((0,0,0))
-            self.drawMap()
-            self.drawHud()
-            #--------------- UPDATE AND TICK ------------#
-            pygame.display.update()
-            self.fpsClock.tick(self.settings.fps)
 
-    def events(self):
-        for event in pygame.event.get():
-            #------------- KEYBOARD EVENTS --------------#
-            if event.type == QUIT:
-                self.running = False
-            if event.type == KEYUP:
-                print('done')
-                if event.key == K_g:
-                    self.showGridLines = not self.showGridLines
-            #---------------- MOUSE EVENTS --------------#
-            if event.type == MOUSEBUTTONDOWN:
-                if event.button == 2:
-                    print("SCROLL STATE: True")
-                    self.scrolling = True
-                    pygame.mouse.get_rel()
-            if event.type == MOUSEBUTTONUP:
-                if event.button == 2:
-                    print('SCROLL STATE: False')
-                    self.scrolling = False
-
-    def update(self):
-        if self.scrolling:
-            self.cam += pygame.mouse.get_rel()
-        # update the map
+    #======================= DRAWING =======================#
+    #=======================================================#
     
     def drawHud(self):
         bg1 = pygame.Surface((200, self.settings.height + 50))
@@ -127,15 +142,19 @@ class MapEditor:
         self.blit_coords_x = self.map_coords_x + self.cam[0]
         self.blit_coords_y = self.map_coords_y + self.cam[1]
         c = 0
-        for y in self.blit_coords_y:
+        for y,py in zip(self.blit_coords_y,range(36)):
             c += 1
             i = c
-            for x in self.blit_coords_x:
+            for x,px in zip(self.blit_coords_x,range(64)):
                 i += 1
                 if i % 2:
                     pygame.draw.rect(self.canvas, '#1c1c1c',(x,y,40,40))
                 else:
                     pygame.draw.rect(self.canvas, '#101010',(x,y,40,40))
+                self.blocks[py][px].rect.x = x
+                self.blocks[py][px].rect.y = y
+                
+    def drawGridLines(self):
         if self.showGridLines:
             pygame.draw.line(self.canvas, '#87afaf', (self.blit_coords_x[32],0), (self.blit_coords_x[32] ,2600))
             pygame.draw.line(self.canvas, '#87afaf', (-40,self.blit_coords_y[18]), (2600,self.blit_coords_y[18]))
