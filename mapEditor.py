@@ -6,25 +6,23 @@ import pickle
 import settings
 from pygame.locals import *
 import SpriteImages
+import FontRenderer
 # make a click and go level editor
     # mouse over a block when left click... creates a block
     # mouce over with right click ... deletes a block
 
-# OPTIONAL
-    # try to get grid lines to give it a blue print feel
-    # later... give the options on the right hand side... to select different blocks
+#-------------------THE BASIC BLOCK------------------------#
+
 class Block(pygame.sprite.Sprite):
-    # _id is a tuple that contains the 2d value of the main MapEditor.map
-    def __init__(self, _id, value, level):
+
+    def __init__(self, pos, value, level):
         super().__init__()
-        self.pos = _id
+        self.pos = pos
         self.value = int(value)
         self.sprites = SpriteImages.levels[level]
         self.image = self.sprites[self.value]
         #----------- UPDATING THE RECT ---------------------#
         self.rect = self.image.get_rect()
-        self.rect.x = self.pos[0] * 40
-        self.rect.y = self.pos[1] * 40
 
     def update(self):
         self.image = self.sprites[self.value]
@@ -34,23 +32,34 @@ class MapEditor:
         #------------------ MAP ID STUFF -------------------#
         self.level = int(input("Enter map number:")) #1,2,3,4...
         self.path = r'./WorldData/Level ' +str(self.level)+ r'/'
-        self.map = numpy.ones((36,64))
+        self.map = numpy.zeros((36,64))
         self.map_coords_x = numpy.arange(64) * 40
         self.map_coords_y = numpy.arange(36) * 43
         self.cam = pygame.math.Vector2(0,0)
         self.sprites = SpriteImages.levels[self.level]
         #------------------ PYGAME STUFF -------------------#
         self.settings = settings.Settings()        
-        self.screen = pygame.display.set_mode((self.settings.width + 200,self.settings.height + 50))
+        self.display = pygame.display.set_mode((1600,900),FULLSCREEN)
+        self.screen = pygame.Surface((self.settings.width + 200,self.settings.height + 50))
         self.canvas = pygame.Surface((self.settings.width,self.settings.height))
         self.fpsClock = pygame.time.Clock()
+        pygame.mouse.set_visible(False)
         #----------------- RUNTIME LOGIC STUFF -------------#
+        self.heading = FontRenderer.CenteredText("MAP EDITOR: (LEVEL %d)"%(self.level),(self.settings.width//2 + 100,25))
         self.running = True
         self.scrolling = False
+        self.leftClick = False
+        self.rightClick = False
+        self.showCursor = True
+        self.cursor = pygame.image.load(r'./OtherData/cursor.png').convert()
+        self.cursor.set_colorkey('#000000')
+        self.selectedBlock = 1
         self.showGridLines = True
+        self.updated = False
         self.loadMap()
         self.loadBlocks()
         self.mainloop()
+
     #====================== MAIN ========================# 
     #====================================================#
     def mainloop(self):
@@ -65,6 +74,8 @@ class MapEditor:
             self.blockGroup.draw(self.canvas)
             self.drawGridLines()
             self.screen.blit(self.canvas, (200,50))
+            self.drawCursor()
+            self.display.blit(pygame.transform.scale(self.screen,pygame.display.get_surface().get_size()),(0,0))
             #------------------ UPDATE AND TICK ------------#
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
@@ -74,22 +85,64 @@ class MapEditor:
             #---------------- KEYBOARD EVENTS --------------#
             if event.type == QUIT:
                 self.running = False
+                if self.updated:
+                    self.confirm()
             if event.type == KEYUP:
                 if event.key == K_g:
                     self.showGridLines = not self.showGridLines
+                if event.key == K_F1:
+                    self.confirm()
+                if event.key == K_ESCAPE:
+                    self.running = False
+                    if self.updated:
+                        self.confirm()
+            if event.type == KEYDOWN:
+                if event.key == K_1:
+                    self.selectedBlock = 1
+                if event.key == K_2:
+                    self.selectedBlock = 2
+                if event.key == K_3:
+                    self.selectedBlock = 3
+                if event.key == K_4:
+                    self.selectedBlock = 4
+                if event.key == K_5:
+                    self.selectedBlock = 5
             #------------------- MOUSE EVENTS --------------#
             if event.type == MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    self.leftClick = True
                 if event.button == 2:
                     self.scrolling = True
+                    self.showCursor = False
                     pygame.mouse.get_rel()
+                if event.button == 3:
+                    self.rightClick = True
             if event.type == MOUSEBUTTONUP:
+                if event.button == 1:
+                    self.leftClick = False
                 if event.button == 2:
                     self.scrolling = False
+                    self.showCursor = True
+                if event.button == 3:
+                    self.rightClick = False
 
     def update(self):
         if self.scrolling:
             self.cam += pygame.mouse.get_rel()
-        # update the map
+        mx,my = pygame.mouse.get_pos()
+        #---------------- CHECK ON CLICK -------------------#
+        for block in self.blockGroup.sprites():
+            if block.rect.collidepoint(mx-200,my-50):
+                x,y = block.pos
+                if self.rightClick:
+                    self.updated = True
+                    block.value = 0
+                    self.map[y][x] = 0
+                if self.leftClick:
+                    self.updated = True
+                    block.value = self.selectedBlock
+                    self.map[y][x] = self.selectedBlock
+        self.blockGroup.update()
 
     def loadBlocks(self):
         #-------------- CREATING Block OBJECTS -------------#
@@ -102,9 +155,9 @@ class MapEditor:
                 self.blocks[y].append(k)
                 self.blockGroup.add(k)
 
+
     #==================== FILE HANDLING ====================#
     #=======================================================#
-
     def loadMap(self):
         # --------------- self.map IS CREATED --------------#
         try:
@@ -117,24 +170,29 @@ class MapEditor:
                 pass
             with open(self.path +'map.dat', 'wb+') as f:
                 pickle.dump(self.map,f)
-        self.map[10][10] = 2
 
     def writeMap(self):
         with open(self.path + 'map.dat','wb+') as f:
             pickle.dump(self.map,f)
+        print('saved')
+        self.updated = False
 
 
     #======================= DRAWING =======================#
     #=======================================================#
-    
+    def drawCursor(self):
+        if self.showCursor:
+            self.screen.blit(self.cursor,pygame.mouse.get_pos())
+
     def drawHud(self):
         bg1 = pygame.Surface((200, self.settings.height + 50))
         bg2 = pygame.Surface((self.settings.width + 200, 50))
         bg1.fill((70,70,70))
-        bg2.fill((70,70,70))
+        bg2.fill((40,40,40))
         #pygame.draw.line(self.screen, '
         self.screen.blit(bg1,(0,0))
         self.screen.blit(bg2,(0,0))
+        self.heading.draw(self.screen)
 
     def drawMap(self):
         self.canvas.fill((0,0,0))
@@ -169,6 +227,42 @@ class MapEditor:
         if self.cam[1] < - 760:
             self.cam[1] = - 760
 
+    def confirm(self):
+        qes = FontRenderer.CenteredText('Do you want to Save?',(500,300))
+        yes = FontRenderer.Button('yes',(660,400),color = "#185818")
+        no = FontRenderer.Button('no',(660,440),color = "#581818")
+        cancel = FontRenderer.Button('cancel',(660,480))
+        running = True
+        click = False
+        while running:
+            for event in pygame.event.get():
+                if event.type == KEYUP:
+                    if event.key == K_ESCAPE:
+                        self.running = True
+                        running = False
+                if event.type == MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        click = True
+                if event.type == MOUSEBUTTONUP:
+                    if event.button == 1:
+                        click = False
+            mx,my = pygame.mouse.get_pos()
+            if yes.hover(mx,my) and click:
+                self.writeMap()
+                break
+            if no.hover(mx,my) and click:
+                    break
+            if cancel.hover(mx,my) and click:
+                    self.running = True
+                    break
+            self.screen.fill("#101010")
+            qes.draw(self.screen)
+            yes.draw(self.screen)
+            no.draw(self.screen)
+            cancel.draw(self.screen)
+            self.drawCursor()
+            self.display.blit(pygame.transform.scale(self.screen,pygame.display.get_surface().get_size()),(0,0))
+            pygame.display.update()
 if __name__ == "__main__":
     editor = MapEditor()
     pygame.quit()
