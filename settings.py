@@ -1,3 +1,6 @@
+#-------------- IMPORTS ---------------#
+import ctypes
+
 class Settings:
     def __init__(self):
         self.width = 1280
@@ -8,3 +11,8 @@ class Settings:
         self.gravity = 0.5
         self.num_of_players = 3
         self.block_size = 32
+
+    def getDisplaySize(self):
+        user32 = ctypes.windll.user32
+        screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+        return screensize
