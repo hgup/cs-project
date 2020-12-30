@@ -199,15 +199,15 @@ class MapEditor:
     def drawHud(self):
         bg1 = pygame.Surface((200, self.settings.height + 50)) # top to bottom
         bg2 = pygame.Surface((self.settings.width + 200, 50)) # left to right
-        bg1.fill((70,90,70))
-        bg2.fill((40,40,40))
-        #pygame.draw.line(self.screen, '
+        bg1.fill("#222831")
+        bg2.fill("#333456")
         self.screen.blit(bg1,(0,0))
         self.screen.blit(bg2,(0,0))
         self.heading.draw(self.screen)
+        pygame.draw.line(self.screen,(255,255,255),(200,50),(600,250))
 
     def drawMap(self):
-        self.canvas.fill((0,0,0))
+        self.canvas.fill("#101010")
         self.limit()
         self.blit_coords_x = self.map_coords_x + self.cam[0]
         self.blit_coords_y = self.map_coords_y + self.cam[1]
@@ -246,15 +246,17 @@ class MapEditor:
         fadePad.fill("#101010")
         alpha = 40
         while True:
-            alpha += 10
+            alpha += 11
             if alpha > 255:
                 break
             fadePad.set_alpha(alpha)
             self.display.blit(pygame.transform.scale(self.screen,self.displaySize),(0,0))
             self.display.blit(fadePad,(0,0))
             pygame.display.flip()
-            pygame.time.delay(3)
+            pygame.time.delay(2)
         self.screen.fill("#101010")
+        self.blitAndFlip()
+        pygame.time.delay(50)
 
     def fadeOut(self):
         pass
@@ -272,6 +274,7 @@ class MapEditor:
                         level += event.unicode
                 if event.type == KEYUP:
                     if event.key == K_ESCAPE:
+                        self.fadeIn()
                         pygame.quit()
                         sys.exit()
                     if event.key == K_RETURN:
