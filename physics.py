@@ -42,7 +42,6 @@ class Physics:
     def friction(self,surface):
         # Friction always works in the direction opposite to the direction
         # in which the object is moving, or trying to move.
-        # NOTE implement kinetic friction
         deceleration = self.vel.x * f[surface][0]
         if deceleration > f[surface][1]: # limiting friction
             deceleration = f[surface][1]

@@ -2,32 +2,34 @@
 import sys
 import pygame
 import pickle
-from pygame.locals import (
-        K_ESCAPE,KEYUP,KEYDOWN,K_w,QUIT,FULLSCREEN)
+import numpy
+from pygame.locals import *
 # import my modules
 import sprites
 import level
 from settings import *
+import mapLoader
 #from gameMenu import Menu
 
 # order for the players will always remain
 # A1, G1, A2, G2, A3, G3 ...
 class Game:
     def __init__(self):
+        #---------------- PYGAME STUFF ------------------#
         self.settings = Settings()
-        self.fpsClock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))
-        self.running = True
-        # only useful for drawing Group
+        self.fpsClock = pygame.time.Clock()
+        #---------------- SPRITE STUFF ------------------#
         self.playerGroup = pygame.sprite.Group()
-        self.map = pygame.sprite.Group()
         self.player = sprites.Angel(pos=[100,100])
         self.playerGroup.add(self.player)
-        self.map = mapLoader.Map()
-        # map elements
+        #---------------- MAP INIT STUFF ----------------#
+        self.map = mapLoader.Map(1)
         self.bg = pygame.image.load(r'./WorldData/Level 1/bg.png')
-        #self.menu = Menu()
-        # after everything start the mainloop
+        #---------------- GAME RUNTIME STUFF ------------#
+        self.running = True
+        self.cam = pygame.math.Vector2(1.0,0.0)
+        self.focus = [(self.settings.width + self.player.rect.width) // 2,(self.settings.height + self.player.rect.height) // 2]
         self.mainloop()
 
     def mainloop(self):
@@ -41,19 +43,32 @@ class Game:
             self.fpsClock.tick(self.settings.fps)
 
     def update(self):
-        # playerSprites_update
+        #---------------- player updates ------------#
         self.move()
-        # environment_update
-        self.map.update()
+        self.cam[0] += (self.player.rect.x - self.cam[0] - self.focus[0])/20
+        self.cam[1] += (self.player.rect.y - self.cam[1] - self.focus[1])/20
+        self.map.group.update()
         self.playerGroup.update()
+        #---------------- MAP UPDATES ---------------#
+
+    def blitAndFlip(self):
+        self.display.fill("#101010")
+        self.display.blit(pygame.transform.scale(self.screen,self.displaySize),(0,0))
+        pygame.display.flip()
+
+    def drawPlayers(self):
+        for player in self.playerGroup.sprites():
+            self.screen.blit(player.image,(player.rect.x - self.cam[0],player.rect.y - self.cam[1]))
+
+
 
     def draw(self):
         # fill with black
         self.screen.blit(self.bg,(0,0))
         # draw environment
-        self.map.draw(self.screen)
+        self.map.draw(self.screen, self.cam)
         # draw players
-        self.playerGroup.draw(self.screen)
+        self.drawPlayers()
         #self.screen.blit(self.player.image,self.player.rect)
 
     def handleEvents(self):
@@ -71,10 +86,17 @@ class Game:
                     if event.key == K_w:
                         self.player.jumping = False
 
+    def collisionDetect(self,entity,group):
+        for entity2 in group.sprites():
+            if entity2.value:
+                if entity.rect.colliderect(entity2.rect):
+                    return entity2
+
+
     def move(self):
         self.player.colliding = {'top':False,'bottom':False,'left':False,'right':False}
         self.player.move_x()
-        s = pygame.sprite.spritecollideany(self.player,self.map)
+        s = self.collisionDetect(self.player,self.map.group)
         if s:
             if self.player.physics.vel.x > 0:
                 self.player.colliding['right'] = True
@@ -83,7 +105,7 @@ class Game:
                 self.player.colliding['left'] = True
                 self.player.rect.left = s.rect.right
         self.player.move_y()
-        s = pygame.sprite.spritecollideany(self.player,self.map)
+        s = self.collisionDetect(self.player,self.map.group)
         if s:
             if self.player.physics.vel.y > 0:
                 self.player.colliding['bottom'] = True
@@ -92,12 +114,7 @@ class Game:
                 self.player.colliding['top'] = True
                 self.player.rect.top = s.rect.bottom
 
-    def start(self):
-        # set running is true
-        # running
-        pass
-
 if __name__ == "__main__":
     game = Game()
     pygame.quit()
-    input("Press any key)
+    input("Press any key")

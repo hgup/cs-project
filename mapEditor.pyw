@@ -8,25 +8,29 @@ import settings
 from pygame.locals import *
 import SpriteImages
 import FontRenderer
+import mapLoader
 # make a click and go level editor
     # mouse over a block when left click... creates a block
     # mouce over with right click ... deletes a block
 
 #-------------------THE BASIC BLOCK------------------------#
 
-class Block(pygame.sprite.Sprite):
+Block = mapLoader.Block
 
-    def __init__(self, pos, value, level):
-        super().__init__()
+class MenuBlocks(pygame.sprite.Sprite):
+
+    def __init__(self, pos, _id):
         self.pos = pos
-        self.value = int(value)
-        self.sprites = SpriteImages.levels[level]
+        self.id = _id
+        self.sprites = SpriteImags.leels[level]
         self.image = self.sprites[self.value]
-        #----------- UPDATING THE RECT ---------------------#
         self.rect = self.image.get_rect()
+        
 
     def update(self):
-        self.image = self.sprites[self.value]
+        pass
+
+
 
 class MapEditor:
 
@@ -88,7 +92,7 @@ class MapEditor:
             self.display.blit(pygame.transform.scale(self.screen,self.displaySize),(0,0))
             #------------------ UPDATE AND TICK ------------#
             pygame.display.update()
-            self.fpsClock.tick(self.settings.fps)
+            self.fpsClock.tick(90)
 
     def events(self):
         for event in pygame.event.get():
@@ -146,14 +150,15 @@ class MapEditor:
         for block in self.blockGroup.sprites():
             if block.rect.collidepoint(mx-200,my-50):
                 x,y = block.pos
+                print(x,y)
                 if self.rightClick:
                     self.updated = True
                     block.value = 0
-                    self.map[y][x] = 0
+                    self.map[int(y)][int(x)] = 0
                 if self.leftClick:
                     self.updated = True
                     block.value = self.selectedBlock
-                    self.map[y][x] = self.selectedBlock
+                    self.map[int(y)][int(x)] = self.selectedBlock
         self.blockGroup.update()
 
     def loadBlocks(self):
