@@ -36,8 +36,8 @@ class Physics:
 
     def gravity(self,region): #region eg. Earth, moon, My bed
         self.vel += vec(0,g[region])
-        if self.vel.y > 14:
-            self.vel.y = 12
+        if self.vel.y > 16:
+            self.vel.y = 16
 
     def friction(self,surface):
         # Friction always works in the direction opposite to the direction

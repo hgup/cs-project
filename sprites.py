@@ -63,11 +63,11 @@ class Angel(pygame.sprite.Sprite):
             self.physics.vel.x *= -0.5
         if self.colliding['bottom']:
             self.physics.vel.y *= -0.5
-            self.air_timer = 0
+            self.air_timer = True
         else:
-            self.air_timer += 1
-        if self.jumping  and self.air_timer <= 4:
-            self.air_timer += 1 
+            pass
+        if self.jumping  and self.air_timer:
+            self.air_timer = False
             self.jump()
         # apply those changes to player's position
 

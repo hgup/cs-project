@@ -3,6 +3,7 @@ import sys
 import pygame
 import pickle
 import numpy
+import random
 from pygame.locals import *
 # import my modules
 import sprites
@@ -52,6 +53,8 @@ class Game:
         self.map.group.update()
         self.playerGroup.update()
         #---------------- MAP UPDATES ---------------#
+        if self.player.rect.y >= self.settings.height * 2:
+            self.player.rect.topleft = random.choice([(0,0),(1000,0),(1700,0)])
 
     def blitAndFlip(self):
         self.display.fill("#101010")
@@ -121,4 +124,3 @@ class Game:
 if __name__ == "__main__":
     game = Game()
     pygame.quit()
-    input("Press any key")
