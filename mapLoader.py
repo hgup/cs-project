@@ -9,6 +9,7 @@ class Block(pygame.sprite.Sprite):
         super().__init__()
         self.pos = pygame.math.Vector2(pos)
         self.value = int(value)
+        self.level = level
         self.sprites = SpriteImages.levels[level]
         self.image = self.sprites[self.value]
         #----------- UPDATING THE RECT ---------------------#

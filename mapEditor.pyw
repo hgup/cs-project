@@ -14,7 +14,23 @@ import mapLoader
     # mouce over with right click ... deletes a block
 
 #-------------------THE BASIC BLOCK------------------------#
-Block = mapLoader.Block
+class Block(pygame.sprite.Sprite):
+
+    def __init__(self, pos, value, level):
+        super().__init__()
+        self.pos = pygame.math.Vector2(pos)
+        self.value = int(value)
+        self.level = level
+        self.sprites = SpriteImages.levels[level]
+        self.image = self.sprites[self.value]
+        #----------- UPDATING THE RECT ---------------------#
+        self.rect = self.image.get_rect()
+        self.rect.topleft = self.pos*40
+
+    def update(self, s):
+        self.image = pygame.transform.scale(self.sprites[self.value],(s,s))
+        self.rect = self.image.get_rect()
+
 class MenuBlock(pygame.sprite.Sprite):
 
     def __init__(self, pos, _id):
@@ -70,7 +86,7 @@ class MapEditor:
         self.addMenuBlocks()
 
         #----------------- RUNTIME LOGIC STUFF -------------#
-        self.g = 0
+        self.size = 40
         self.heading = FontRenderer.CenteredText("MAP EDITOR: (LEVEL %d)"%(self.level),(self.settings.width//2 + 100,25))
         self.running = True
         self.scrolling = False
@@ -79,7 +95,7 @@ class MapEditor:
         self.showCursor = True
         self.cursor = pygame.image.load(r'./OtherData/cursor_normal.png').convert()
         self.cursor.set_colorkey("#000000")
-        self.cursor = pygame.transform.scale(self.cursor,(30,30))
+        self.cursor = pygame.transform.scale(self.cursor,(self.size,self.size))
         self.selectedBlock = 1
         self.showGridLines = True
         self.updated = False
@@ -168,6 +184,19 @@ class MapEditor:
                     self.showCursor = True
                 if event.button == 3:
                     self.rightClick = False
+            if event.type == MOUSEWHEEL:
+                if event.y < 0: # mouse down
+                    self.map_coords_x = numpy.arange(64) * self.size
+                    self.map_coords_y = numpy.arange(36) * self.size
+                    self.size -= 2
+                    if self.size < 20:
+                        self.size = 20
+                elif event.y > 0: # mouse up
+                    self.size += 2
+                    if self.size > 40:
+                        self.size = 40
+                self.map_coords_x = numpy.arange(64) * self.size
+                self.map_coords_y = numpy.arange(36) * self.size
 
     def update(self):
         if self.scrolling:
@@ -185,7 +214,7 @@ class MapEditor:
                     self.updated = True
                     block.value = self.selectedBlock
                     self.map[int(y)][int(x)] = self.selectedBlock
-        self.blockGroup.update()
+        self.blockGroup.update(self.size)
         self.menuBlocks.update(mx,my,self)
     #=================== OBJECT HANDLING ===================#
     #=======================================================#
@@ -210,8 +239,6 @@ class MapEditor:
                 c += 1
             pos = (abs((i % 2)-1) * (50 + p), c * (70 + p))
             self.menuBlocks.add(MenuBlock(pos,i))
-
-
 
     #==================== FILE HANDLING ====================#
     #=======================================================#
@@ -246,8 +273,8 @@ class MapEditor:
         bg2 = pygame.Surface((self.settings.width + 200, 50)) # left to right
         bg1.fill("#222831")
         bg2.fill("#333456")
-        self.screen.blit(bg1,(0,0))
         self.screen.blit(bg2,(0,0))
+        self.screen.blit(bg1,(0,0))
         self.heading.draw(self.screen)
         self.menuBlocks.draw(self.screen)
         pygame.draw.line(self.screen,(255,255,255),(200,50),(600,250))
@@ -264,9 +291,9 @@ class MapEditor:
             for x,px in zip(self.blit_coords_x,range(64)):
                 i += 1
                 if i % 2:
-                    pygame.draw.rect(self.canvas, '#1c1c1c',(x,y,40,40))
+                    pygame.draw.rect(self.canvas, '#1c1c1c',(x,y,self.size,self.size))
                 else:
-                    pygame.draw.rect(self.canvas, '#101010',(x,y,40,40))
+                    pygame.draw.rect(self.canvas, '#101010',(x,y,self.size,self.size))
                 self.blocks[py][px].rect.x = x
                 self.blocks[py][px].rect.y = y
 

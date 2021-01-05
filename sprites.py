@@ -39,6 +39,7 @@ class Angel(pygame.sprite.Sprite):
         self.jumping = False
         self.air_timer = 0
         self.colliding = {'top':False,'bottom':False,'left':False,'right':False}
+        self.wall = False
         # additional features
         self.lives = 3
         self.stamina = 10.0
@@ -57,18 +58,47 @@ class Angel(pygame.sprite.Sprite):
         self.rect.move_ip(0,self.physics.vel.y)
 
     def update(self):
+        self.wall = False
         if self.colliding['top']:
-            self.physics.vel.y = 0
-        if self.colliding['left'] or self.colliding['right']:
+            self.physics.vel.y *= 0.2
+
+        if self.colliding['left']:
             self.physics.vel.x *= -0.5
+            if self.moving:
+                self.wall = True
+                self.air_timer = True
+
+        if self.colliding['right']:
+            self.physics.vel.x *= -0.5
+            if self.moving:
+                self.wall = True
+                self.air_timer = True
         if self.colliding['bottom']:
             self.physics.vel.y *= -0.5
             self.air_timer = True
         else:
             pass
+        acc = 0
         if self.jumping  and self.air_timer:
+            if self.wall:
+                if self.colliding['right']:
+                    self.physics.vel.x = -10
+                    self.physics.acc.x += 0.3
+                elif self.colliding['left']:
+                    self.physics.vel.x = +10
+                    self.physics.acc.x -= 0.3
+                self.wall = False
             self.air_timer = False
             self.jump()
+        if self.wall:
+            print('now walling',self.physics.vel)
+            self.physics.vel.y += 0.0001
+            if self.physics.vel.y > 0.6:
+                self.physics.vel.y = 0.6
+            self.physics.vel.x = 0
+            self.physics.fr = 0.1
+        else:
+            self.physics.fr = 0
         # apply those changes to player's position
 
         # NOTE: collisions will be implelemnted(restrictions) here
@@ -76,6 +106,7 @@ class Angel(pygame.sprite.Sprite):
     def start_move(self,e):
         if e.key in self.controls.keys():
             movement = self.controls[e.key]
+            self.moving = True
             if movement == 'left':
                 self.physics.acc.x = -base_acc
                 self.last_state = 'left'
@@ -86,6 +117,7 @@ class Angel(pygame.sprite.Sprite):
     def stop_move(self,e):
         try:
             if self.controls[e.key] == self.last_state:
+                self.moving = False
                 self.physics.acc = vec(0,0)
             if self.controls[e.key] == 'down':
                 self.physics.acc.y = 0
