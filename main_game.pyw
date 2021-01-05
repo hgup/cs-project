@@ -21,7 +21,7 @@ class Game:
         self.fpsClock = pygame.time.Clock()
         #---------------- SPRITE STUFF ------------------#
         self.playerGroup = pygame.sprite.Group()
-        self.player = sprites.Angel(pos=[100,100])
+        self.player = sprites.Angel(pos=[200,100])
         self.playerGroup.add(self.player)
         #---------------- MAP INIT STUFF ----------------#
         self.map = mapLoader.Map(1)
@@ -47,6 +47,8 @@ class Game:
         self.move()
         self.cam[0] += (self.player.rect.x - self.cam[0] - self.focus[0])/20
         self.cam[1] += (self.player.rect.y - self.cam[1] - self.focus[1])/20
+        self.cam[0] = int(self.cam[0])
+        self.cam[1] = int(self.cam[1])
         self.map.group.update()
         self.playerGroup.update()
         #---------------- MAP UPDATES ---------------#
@@ -81,6 +83,8 @@ class Game:
                         self.running = False
                     if event.key == K_w:
                         self.player.jumping = True
+                    if event.key == K_s:
+                        self.player.dash()
             if event.type == KEYUP:
                     self.player.stop_move(event)
                     if event.key == K_w:
