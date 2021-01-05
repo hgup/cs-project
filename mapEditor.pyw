@@ -7,6 +7,7 @@ import pickle
 import settings
 from pygame.locals import *
 import SpriteImages
+SpriteImages = SpriteImages.SpriteImages()
 import FontRenderer
 import mapLoader
 # make a click and go level editor
@@ -352,7 +353,7 @@ class MapEditor:
                         sys.exit()
                     if event.key == K_RETURN:
                         val = int(level)
-                        if val in [1]:
+                        if val in [1,2,3]:
                             self.fadeIn()
                             return val
                         else:

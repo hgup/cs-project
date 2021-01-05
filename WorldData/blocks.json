@@ -1,0 +1,33 @@
+{
+    "1":{
+        "path":".//WorldData//Level 1//Sprites//World//",
+        "images":[
+            "full block.png",
+            "top left.png",
+            "top right.png",
+            "bottom right.png",
+            "bottom left.png"
+        ]
+
+    },
+    "2":{
+        "path":".//WorldData//Level 2//Sprites//World//",
+        "images":[
+            "full block.png",
+            "top left.png",
+            "top right.png",
+            "bottom right.png",
+            "bottom left.png"
+        ]
+    },
+    "3":{
+        "path":".//WorldData//Level 3//Sprites//World//",
+        "images":[
+            "full block.png",
+            "top left.png",
+            "top right.png",
+            "bottom right.png",
+            "bottom left.png"
+        ]
+    }
+}

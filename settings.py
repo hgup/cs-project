@@ -13,6 +13,9 @@ class Settings:
         self.block_size = 32
 
     def getDisplaySize(self):
-        user32 = ctypes.windll.user32
-        screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
-        return screensize
+        try:
+            user32 = ctypes.windll.user32
+            screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+            return screensize
+        except:
+            return (1280,720)

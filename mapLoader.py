@@ -2,6 +2,7 @@ import numpy
 import pygame
 import pickle
 import SpriteImages
+SpriteImages = SpriteImages.SpriteImages()
 
 class Block(pygame.sprite.Sprite):
 
