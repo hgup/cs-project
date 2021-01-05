@@ -25,10 +25,13 @@ class Angel(pygame.sprite.Sprite):
         # import settings
         self.settings = Settings()
         # surface and rect
-        self.image = pygame.Surface((20,20))
+        self.image = pygame.Surface((200,200))
+        pygame.draw.circle(self.image,'#27ae60',(100,100),99)
+        self.image = pygame.transform.scale(self.image,(30,30))
+        self.image.fill('#27ae60')
         self.rect = self.image.get_rect()
         self.rect.x,self.rect.y = pos
-        self.image.fill('green')
+        self.image.set_colorkey('#000000')
         # movement
         self.controls = controls[0]
         self.physics = Physics(self.rect,1)
@@ -37,8 +40,9 @@ class Angel(pygame.sprite.Sprite):
         self.air_timer = 0
         self.colliding = {'top':False,'bottom':False,'left':False,'right':False}
         # additional features
-        self.health = 10
+        self.lives = 3
         self.stamina = 10.0
+        self.capJump = 12
 
     def move_x(self):
         # apply physics to player.physics.rect
@@ -56,13 +60,14 @@ class Angel(pygame.sprite.Sprite):
         if self.colliding['top']:
             self.physics.vel.y = 0
         if self.colliding['left'] or self.colliding['right']:
-            self.physics.vel.x *= -0.8
+            self.physics.vel.x *= -0.5
         if self.colliding['bottom']:
-            self.physics.vel.y = 0
+            self.physics.vel.y *= -0.5
             self.air_timer = 0
         else:
             self.air_timer += 1
-        if self.jumping and self.air_timer < 4:
+        if self.jumping  and self.air_timer <= 4:
+            self.air_timer += 1 
             self.jump()
         # apply those changes to player's position
 
@@ -88,7 +93,10 @@ class Angel(pygame.sprite.Sprite):
             pass
 
     def jump(self):
-        self.physics.vel.y = -12
+        self.physics.vel.y = -self.capJump
+
+    def dash(self):
+        self.physics.acc.y = 3
 
     def debug(self):
         pass

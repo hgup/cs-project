@@ -14,29 +14,40 @@ import mapLoader
     # mouce over with right click ... deletes a block
 
 #-------------------THE BASIC BLOCK------------------------#
-
 Block = mapLoader.Block
-
-class MenuBlocks(pygame.sprite.Sprite):
+class MenuBlock(pygame.sprite.Sprite):
 
     def __init__(self, pos, _id):
-        self.pos = pos
-        self.id = _id
-        self.sprites = SpriteImags.leels[level]
-        self.image = self.sprites[self.value]
+        super().__init__()
+        self.value = _id
+        level = 1
+        self.sprites = SpriteImages.levels[level]
+        self.image = pygame.Surface((50,70),SRCALPHA)
+        self.image.blit(self.sprites[self.value], (5,0))
+        self.image.set_colorkey("#000000")
+        self.image.set_alpha(100)
         self.rect = self.image.get_rect()
-        
+        self.rect.topleft = (pos[0] + 35 ,pos[1] - 20)
+        self.selected = False
+        self.current = 1
 
-    def update(self):
-        pass
+    def update(self,mx,my, editor):
+        if self.rect.collidepoint(mx,my):
+            self.image.set_alpha(170)
+            if editor.leftClick:
+                editor.selectedBlock = self.value
+        else:
+            self.image.set_alpha(100)
 
+        if editor.selectedBlock == self.value:
+            self.image.set_alpha(255)
 
 
 class MapEditor:
 
     def __init__(self):
         #------------------ PYGAME STUFF -------------------#
-        self.settings = settings.Settings()        
+        self.settings = settings.Settings()
         self.alpha = 255
         self.displaySize = self.settings.getDisplaySize()
         self.display = pygame.display.set_mode(self.displaySize,FULLSCREEN)
@@ -44,6 +55,7 @@ class MapEditor:
         self.canvas = pygame.Surface((self.settings.width,self.settings.height))
         self.fpsClock = pygame.time.Clock()
         pygame.mouse.set_visible(False)
+
         #------------------ MAP ID STUFF -------------------#
         self.level = self.startScreen() #1,2,3,4...
         self.path = r'./WorldData/Level ' +str(self.level)+ r'/'
@@ -52,7 +64,13 @@ class MapEditor:
         self.map_coords_y = numpy.arange(36) * 40
         self.cam = pygame.math.Vector2(0,0)
         self.sprites = SpriteImages.levels[self.level]
+
+        #------------------ Menu Blocks ----------------#
+        self.menuBlocks = pygame.sprite.Group()
+        self.addMenuBlocks()
+
         #----------------- RUNTIME LOGIC STUFF -------------#
+        self.g = 0
         self.heading = FontRenderer.CenteredText("MAP EDITOR: (LEVEL %d)"%(self.level),(self.settings.width//2 + 100,25))
         self.running = True
         self.scrolling = False
@@ -73,8 +91,8 @@ class MapEditor:
             self.display.fill("#101010")
             self.display.blit(pygame.transform.scale(self.screen,self.displaySize),(0,0))
             pygame.display.flip()
-    
-    #====================== MAIN ========================# 
+
+    #====================== MAIN ========================#
     #====================================================#
     def mainloop(self):
         while self.running:
@@ -95,6 +113,7 @@ class MapEditor:
             self.fpsClock.tick(90)
 
     def events(self):
+        self.g = 0
         for event in pygame.event.get():
             #---------------- KEYBOARD EVENTS --------------#
             if event.type == QUIT:
@@ -112,6 +131,14 @@ class MapEditor:
                         self.confirm('Do you want to Save?')
                     else:
                         self.confirm("Do you want to quit?")
+                if event.key == K_w:
+                    self.g = 1
+                if event.key == K_s:
+                    self.g = 2
+                if event.key == K_a:
+                    self.g = 3
+                if event.key == K_d:
+                    self.g = 4
             if event.type == KEYDOWN:
                 if event.key == K_1:
                     self.selectedBlock = 1
@@ -150,7 +177,6 @@ class MapEditor:
         for block in self.blockGroup.sprites():
             if block.rect.collidepoint(mx-200,my-50):
                 x,y = block.pos
-                print(x,y)
                 if self.rightClick:
                     self.updated = True
                     block.value = 0
@@ -160,6 +186,9 @@ class MapEditor:
                     block.value = self.selectedBlock
                     self.map[int(y)][int(x)] = self.selectedBlock
         self.blockGroup.update()
+        self.menuBlocks.update(mx,my,self)
+    #=================== OBJECT HANDLING ===================#
+    #=======================================================#
 
     def loadBlocks(self):
         #-------------- CREATING Block OBJECTS -------------#
@@ -171,6 +200,17 @@ class MapEditor:
                 k = Block((x,y),self.map[y][x],self.level)
                 self.blocks[y].append(k)
                 self.blockGroup.add(k)
+
+    def addMenuBlocks(self):
+        L = len(SpriteImages.levels[self.level])
+        p = 20
+        c = 0
+        for i in range(L):
+            if i % 2 == 1:
+                c += 1
+            pos = (abs((i % 2)-1) * (50 + p), c * (70 + p))
+            self.menuBlocks.add(MenuBlock(pos,i))
+
 
 
     #==================== FILE HANDLING ====================#
@@ -209,6 +249,7 @@ class MapEditor:
         self.screen.blit(bg1,(0,0))
         self.screen.blit(bg2,(0,0))
         self.heading.draw(self.screen)
+        self.menuBlocks.draw(self.screen)
         pygame.draw.line(self.screen,(255,255,255),(200,50),(600,250))
 
     def drawMap(self):
@@ -228,7 +269,7 @@ class MapEditor:
                     pygame.draw.rect(self.canvas, '#101010',(x,y,40,40))
                 self.blocks[py][px].rect.x = x
                 self.blocks[py][px].rect.y = y
-                
+
     def drawGridLines(self):
         if self.showGridLines:
             pygame.draw.line(self.canvas, '#87afaf', (self.blit_coords_x[32],0), (self.blit_coords_x[32] ,2600))
@@ -299,7 +340,7 @@ class MapEditor:
                 warningNum.draw(self.screen)
 
             self.blitAndFlip()
-        
+
     def sorry(self,text):
         messege = FontRenderer.CenteredText(text,(500,300))
         running = True
