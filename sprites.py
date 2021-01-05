@@ -73,6 +73,7 @@ class Angel(pygame.sprite.Sprite):
             if self.moving:
                 self.wall = True
                 self.air_timer = True
+
         if self.colliding['bottom']:
             self.physics.vel.y *= -0.5
             self.air_timer = True
@@ -87,7 +88,7 @@ class Angel(pygame.sprite.Sprite):
                 elif self.colliding['left']:
                     self.physics.vel.x = +10
                     self.physics.acc.x -= 0.3
-                self.wall = False
+            self.wall = False
             self.air_timer = False
             self.jump()
         if self.wall:

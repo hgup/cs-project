@@ -18,7 +18,9 @@ class Game:
     def __init__(self):
         #---------------- PYGAME STUFF ------------------#
         self.settings = Settings()
-        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))
+        self.displaySize = self.settings.getDisplaySize()
+        self.screen = pygame.Surface((self.settings.width,self.settings.height))
+        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height),FULLSCREEN)
         self.fpsClock = pygame.time.Clock()
         #---------------- SPRITE STUFF ------------------#
         self.playerGroup = pygame.sprite.Group()
