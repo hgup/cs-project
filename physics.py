@@ -2,7 +2,7 @@ import pygame
 vec = pygame.math.Vector2
 from settings import Settings
 g = {
-        "Earth": 0.3,
+        "Earth": 0.4,
         "Moon": 0.1,
         "Bed": 0.4,
         "earth": 0.3,
@@ -26,18 +26,21 @@ class Physics:
         # for our 2d convention we assume everything to be 1units wide
         self.mass = self.volume * self.density
         self.momentum = vec(0,0)
+        self.fr = 0
         self.i = 0
 
     def motion_x(self):
         self.vel.x += self.acc.x
+        if self.vel.x > 10:
+            self.vel.x = 10
 
     def motion_y(self):
         self.vel.y += self.acc.y
-
-    def gravity(self,region): #region eg. Earth, moon, My bed
-        self.vel += vec(0,g[region])
         if self.vel.y > 16:
             self.vel.y = 16
+
+    def gravity(self,region): #region eg. Earth, moon, My bed
+        self.vel += vec(0,g[region]) - vec(0,self.fr)
 
     def friction(self,surface):
         # Friction always works in the direction opposite to the direction

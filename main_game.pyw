@@ -55,6 +55,7 @@ class Game:
         #---------------- MAP UPDATES ---------------#
         if self.player.rect.y >= self.settings.height * 2:
             self.player.rect.topleft = random.choice([(0,0),(1000,0),(1700,0)])
+            self.player.physics.vel = pygame.math.Vector2(0.0,0.0)
 
     def blitAndFlip(self):
         self.display.fill("#101010")
@@ -84,13 +85,13 @@ class Game:
                     self.player.start_move(event)
                     if event.key == K_ESCAPE:
                         self.running = False
-                    if event.key == K_w:
-                        self.player.jumping = True
                     if event.key == K_s:
                         self.player.dash()
+                    if event.key == K_SPACE or event.key == K_w:
+                        self.player.jumping = True
             if event.type == KEYUP:
                     self.player.stop_move(event)
-                    if event.key == K_w:
+                    if event.key == K_SPACE or event.key == K_w:
                         self.player.jumping = False
 
     def collisionDetect(self,entity,group):
