@@ -19,6 +19,7 @@ class Block(pygame.sprite.Sprite):
 
     def __init__(self, pos, value, level):
         super().__init__()
+        print('lol, map editor not running')
         self.pos = pygame.math.Vector2(pos)
         self.value = int(value)
         self.level = level
@@ -34,10 +35,9 @@ class Block(pygame.sprite.Sprite):
 
 class MenuBlock(pygame.sprite.Sprite):
 
-    def __init__(self, pos, _id):
+    def __init__(self, pos, _id,level):
         super().__init__()
         self.value = _id
-        level = 1
         self.sprites = SpriteImages.levels[level]
         self.image = pygame.Surface((50,70),SRCALPHA)
         self.image.blit(self.sprites[self.value], (5,0))
@@ -239,7 +239,7 @@ class MapEditor:
             if i % 2 == 1:
                 c += 1
             pos = (abs((i % 2)-1) * (50 + p), c * (70 + p))
-            self.menuBlocks.add(MenuBlock(pos,i))
+            self.menuBlocks.add(MenuBlock(pos,i,self.level))
 
     #==================== FILE HANDLING ====================#
     #=======================================================#
