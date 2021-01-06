@@ -15,19 +15,20 @@ import mapLoader
 # order for the players will always remain
 # A1, G1, A2, G2, A3, G3 ...
 class MenuBlocks(pygame.sprite.Sprite):
-    def __init__(self,img,pos):
+    def __init__(self,img,pos,val):
         super().__init__()
-        self.image = pygame.image.load(r'./OtherData/' + img)
+        self.image = pygame.image.load(r'./OtherData/' + img).convert()
+        self.image.set_colorkey("#000000")
         self.rect = self.image.get_rect()
         self.rect.topleft = pos
-        self.value = 1
+        self.value = val
 class Game:
     def __init__(self):
         #---------------- PYGAME STUFF ------------------#
         self.settings = Settings()
         self.displaySize = self.settings.getDisplaySize()
         self.screen = pygame.Surface((self.settings.width,self.settings.height))
-        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height),FULLSCREEN)
+        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))#,FULLSCREEN)
         self.fpsClock = pygame.time.Clock()
         self.homeScreen()
     
@@ -79,8 +80,6 @@ class Game:
         for player in self.playerGroup.sprites():
             self.screen.blit(player.image,(player.rect.x - self.cam[0],player.rect.y - self.cam[1]))
 
-
-
     def draw(self):
         # fill with black
         self.screen.blit(self.bg,(0,0))
@@ -99,14 +98,13 @@ class Game:
                     if event.key == K_ESCAPE:
                         self.home = False
                         self.running = False
-                    if event.key == K_DOWN:
-                        self.player.dash()
-                    if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
-                        self.player.jumping = True
+                    if event.key == K_DOWN: self.player.dash()
+                    if event.key == K_SPACE or event.key == K_UP or event.key == K_w: self.player.jumping = True
             if event.type == KEYUP:
                     self.player.stop_move(event)
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
                         self.player.jumping = False
+                    if event.key == K_RETURN: return K_RETURN
 
     def collisionDetect(self,entity,group):
         for entity2 in group.sprites():
@@ -135,28 +133,47 @@ class Game:
             elif self.player.physics.vel.y < 0:
                 self.player.colliding['top'] = True
                 self.player.rect.top = s.rect.bottom
+        return s
 
     def startScreen(self):
         self.menu = True
         while self.menu:
-            for event in pygame.events.get():
+            for event in pygame.event.get():
                 if event.type == KEYUP:
-                    if event.key == K_Enter:
+                    if event.key == K_RETURN:
                         return 1
 
     def homeScreen(self):
         self.home = True
         self.bg = pygame.image.load('./OtherData/home.png')
-        selection = 0
+        selected = 9
         self.homeGroup = pygame.sprite.Group()
         self.player = sprites.Angel([633,100],'#ec565c')
-        for i in [('options.png',(35,535)),('play.png',(480,520)),('exit.png',(950,545)),('T.png',(632,154))]:
-            self.homeGroup.add(MenuBlocks(i[0],i[1]))
+        for i in [('options.png',(55,533),1),('play.png',(480,513),2),('exit.png',(889,533),3),('T.png',(632,154),9)]:
+            self.homeGroup.add(MenuBlocks(i[0],i[1],i[2]))
+        t = 1
+        def changeSelected(x,selected):
+            for homeButton in self.homeGroup:
+                if homeButton is x:
+                    selected = homeButton.value
+                if selected == homeButton.value:
+                    homeButton.image.set_alpha(255)
+                else:
+                    homeButton.image.set_alpha(180)
+            return selected
 
         while self.home:
             self.screen.blit(self.bg,(0,0))
-            self.handleEvents()
-            self.move(self.homeGroup)
+            pressed = self.handleEvents()
+            s =self.move(self.homeGroup)
+            selected = changeSelected(s, selected)
+            K = pygame.key.get_pressed()
+            if pressed == K_RETURN:
+                    if selected == 1: 
+                        print('optionMenu')
+                        self.optionMenu()
+                    if selected == 2: self.newGame()
+                    if selected == 3: self.home = False
             self.player.update()
             self.screen.blit(self.player.image,self.player.rect.topleft)
             self.homeGroup.draw(self.screen)
@@ -164,6 +181,8 @@ class Game:
             self.fpsClock.tick(self.settings.fps)
         self.player.kill()
 
+        def optionMenu(self):
+            pass
 if __name__ == "__main__":
     game = Game()
     pygame.quit()
