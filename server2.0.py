@@ -2,10 +2,8 @@
 import socket
 import _thread
 import sys
-import pygame
 import pickle
 from settings import Settings
-vec = pygame.Vector2
 
 
 class Server:
@@ -62,7 +60,8 @@ class Server:
     def threadedClient(self,conn):
         myId = self.getAvailableId()
         if myId is not None:
-            conn.send(str.encode(str(myId))) # available myId is actually the game.net.id
+            x,y = self.vertex[myId][0] # init Rect
+            conn.send(str.encode(str([myId,x,y]))) # available myId is actually the game.net.id
             self.mainloop(conn, myId)
             # now conn is useless
             self.setAvailableId(myId)
@@ -87,7 +86,7 @@ class Server:
                     conn.send(pickle.dumps(str(myId) + ' left the game'))
     
             except Exception as err:
-                print(err,'so sad')
+                print(err,'...so sad............')
                 self.vertex[myId][1] = 1
                 running = False
                 break

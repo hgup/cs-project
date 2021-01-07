@@ -7,9 +7,10 @@ class Network:
         self.host = 'localhost'
         self.port = 1233
         self.addr = (self.host, self.port)
+        reply =self.connect()
         try:
-            reply =self.connect()
-            self.id = int(reply)
+            self.id,x,y = eval(reply)
+            self.initRect = (x,y)
         except:
             print(reply)
 
