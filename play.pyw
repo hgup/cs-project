@@ -42,7 +42,7 @@ class Game:
         self.playerGroup = pygame.sprite.Group()
         self.peers = peers
         self.net = Network()
-        self.vertex = [(50,50),(100,100),(150,150)][:self.peers]
+        self.vertex = [[(50,50),0],[(100,100),0],[(150,150),0]][:self.peers]
         self.addAllPlayers()
         #---------------- MAP INIT STUFF ----------------#
         level = 1 #self.startScreen()
@@ -57,8 +57,8 @@ class Game:
 
     def addAllPlayers(self):
         # initialize all locations
-        for _id,location in zip(range(self.peers),self.vertex):
-            a = sprites.Angel(_id,location)
+        for _id,vert in zip(range(self.peers),self.vertex):
+            a = sprites.Angel(_id,vert[0])
             self.playerGroup.add(a)
             if self.net.id == _id: # link this game session and player
                 self.player = a
@@ -93,12 +93,12 @@ class Game:
 
     def updateAllPlayers(self):
         try:
-            self.players_pos = pickle.loads(self.net.send(pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y)])))
+            self.vertex = pickle.loads(self.net.send(pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y)])))
         except:
             self.net.client.close()
             self.homeScreen()
-        for player,pos in zip(self.playerGroup.sprites(),self.players_pos):
-            player.rect.x, player.rect.y = pos
+        for player,vert in zip(self.playerGroup.sprites(),self.vertex):
+            player.rect.x, player.rect.y = vert[0]
 
 
     def blitAndFlip(self):
@@ -108,7 +108,8 @@ class Game:
 
     def drawAllPlayers(self):
         for player in self.playerGroup.sprites():
-            self.screen.blit(player.image,(player.rect.x - self.cam[0],player.rect.y - self.cam[1] ))
+            if self.vertex[player.id][1]:
+                self.screen.blit(player.image,(player.rect.x - self.cam[0],player.rect.y - self.cam[1] ))
 
     def draw(self):
         # fill with black
@@ -121,7 +122,10 @@ class Game:
 
     def pause(self):
         self.running = False
-        self.net.client.close()
+        try:
+            self.net.client.close()
+        except:
+            pass
 
     def handleEvents(self):
         for event in pygame.event.get():

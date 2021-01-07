@@ -25,14 +25,6 @@ class Server:
         self.initVertex()
         self.acceptRequest()
 
-    def initVertex(self):
-        """ initialize vertex here """
-        self.vertex = [
-                (50,50),
-                (100,100),
-                (150,150)
-                ][:self.peers]
-
     def bind(self):
         try:
             self.socket.bind((self.server, self.port))
@@ -58,10 +50,19 @@ class Server:
         print('available:',self.available)
         print('connected:',self.connected)
 
+    def initVertex(self):
+        """ initialize vertex here """
+        # [(x,y) , draw? ]
+        self.vertex = [
+                [(50,50),0],
+                [(100,100),0],
+                [(150,150),0]
+                ][:self.peers]
+
     def threadedClient(self,conn):
         myId = self.getAvailableId()
         if myId is not None:
-            conn.send(str.encode(str(myId)))
+            conn.send(str.encode(str(myId))) # available myId is actually the game.net.id
             self.mainloop(conn, myId)
             # now conn is useless
             self.setAvailableId(myId)
@@ -74,18 +75,20 @@ class Server:
 
     def mainloop(self, conn, myId):
         running = True
+        self.vertex[myId][1] = 1
         while running:
             try:
                 data = conn.recv(2048)
                 received = pickle.loads(data)
                 if data:
-                    self.vertex[received[0]] = received[1] # id = vec
+                    self.vertex[received[0]][0] = received[1] # id[pos] = vec
                     conn.sendall(pickle.dumps(self.vertex))
                 else:
                     conn.send(pickle.dumps(str(myId) + ' left the game'))
     
             except Exception as err:
-                print(err, 'lol')
+                print(err,'so sad')
+                self.vertex[myId][1] = 1
                 running = False
                 break
 
