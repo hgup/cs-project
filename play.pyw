@@ -1,6 +1,7 @@
 #imports game modules
 from network import Network
 import sys
+import os
 import pygame
 import pickle
 import numpy
@@ -31,9 +32,12 @@ class Game:
     def __init__(self):
         #---------------- PYGAME STUFF ------------------#
         self.settings = Settings()
+        os.environ['SDL_VIDEO_CENTERED'] = '1'
+        pygame.init()
         self.displaySize = self.settings.getDisplaySize()
         #self.screen = pygame.Surface((self.settings.width,self.settings.height))
-        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height),FULLSCREEN)
+        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))#,FULLSCREEN)
+        self.fullscreen = False
         self.fpsClock = pygame.time.Clock()
         self.homeScreen()
     
@@ -51,14 +55,14 @@ class Game:
         #---------------- GAME RUNTIME STUFF ------------#
         self.running = True
         self.cam = pygame.math.Vector2(1.0,0.0)
-        self.focus = [(self.settings.width + self.player.rect.width) // 2,(self.settings.height + self.player.rect.height) // 2]
+        self.focus = [(self.settings.width - self.player.rect.width) // 2,(self.settings.height - self.player.rect.height) // 2]
         self.mainloop()
         self.net.client.close()
 
     def addAllPlayers(self):
         # initialize all locations
-        for _id,vert in zip(range(self.peers),self.vertex):
-            a = sprites.Angel(_id,vert[0])
+        for _id in range(self.peers):
+            a = sprites.Angel(_id,self.net.initRect)
             self.playerGroup.add(a)
             if self.net.id == _id: # link this game session and player
                 self.player = a
@@ -73,16 +77,20 @@ class Game:
             # flip and tick
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
+    def camUpdates(self):
+        self.cam[0] += (self.player.rect.x - self.cam[0] - self.focus[0])/20
+        self.cam[1] += (self.player.rect.y - self.cam[1] - self.focus[1])/20
+        if self.cam[0] < LB_x: self.cam[0] = LB_x
+        elif self.cam[0] > UB_x: self.cam[0] = UB_x
+        if self.cam[1] < LB_y: self.cam[1] = LB_y
+        elif self.cam[1] > UB_y: self.cam[1] = UB_y
+        self.cam[0] = int(self.cam[0])
+        self.cam[1] = int(self.cam[1])
 
     def update(self):
         #---------------- player updates ------------#
         self.move(self.map.group)
-        self.cam[0] += (self.player.rect.x - self.cam[0] - self.focus[0])/20
-        self.cam[1] += (self.player.rect.y - self.cam[1] - self.focus[1])/20
-        if self.cam[0] < 0: self.cam[0] = 0
-        if self.cam[1] < 0: self.cam[1] = 0
-        self.cam[0] = int(self.cam[0])
-        self.cam[1] = int(self.cam[1])
+        self.camUpdates()
         self.map.group.update()
         self.player.update()
         self.updateAllPlayers()
@@ -137,6 +145,16 @@ class Game:
                         self.pause()
                     if event.key == K_DOWN: self.player.dash()
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w: self.player.jumping = True
+                    if event.key == K_F11:
+                        self.fullscreen = not self.fullscreen
+                        if self.fullscreen:
+                                self.screen = pygame.display.set_mode((self.settings.width,self.settings.height),FULLSCREEN)
+                        else:
+                                os.environ['SDL_VIDEO_CENTERED'] = '1'
+                                pygame.display.quit()
+                                pygame.display.init()
+                                self.screen = pygame.display.set_mode((self.settings.width,self.settings.height),RESIZABLE)
+                                #os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (20,20)
             if event.type == KEYUP:
                     self.player.stop_move(event)
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
@@ -199,6 +217,7 @@ class Game:
             self.screen.blit(self.bg,(0,0))
             pressed = self.handleEvents()
             s =self.move(self.homeGroup)
+            if self.player.rect.y  > 1280: self.player.rect.topleft = (633,100)
             selected = changeSelected(s, selected)
             K = pygame.key.get_pressed()
             if pressed == K_RETURN:
