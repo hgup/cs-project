@@ -1,0 +1,113 @@
+#=================== MODULES ====================#
+import socket
+import _thread
+import sys
+import pygame
+import pickle
+from settings import Settings
+vec = pygame.Vector2
+
+
+class Server:
+
+    def __init__(self, peers):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server = ''
+        self.port = 1233
+        self.server_ip = socket.gethostbyname(self.server)
+        self.bind()
+        self.peers = peers
+        self.socket.listen(self.peers)
+        self.settings = Settings()
+        self.vertex = []
+        self.available = [i for i in range(self.peers)]
+        self.connected = []
+        self.initVertex()
+        self.acceptRequest()
+
+    def initVertex(self):
+        """ initialize vertex here """
+        self.vertex = [
+                (50,50),
+                (100,100),
+                (150,150)
+                ][:self.peers]
+
+    def bind(self):
+        try:
+            self.socket.bind((self.server, self.port))
+        except socket.error as err:
+            print(str(err))
+
+    def getAvailableId(self):
+        if len(self.available) != 0:
+            self.available.sort()
+            i = self.available[0]
+            del self.available[0]
+            self.connected.append(i)
+            self.showAvailableId()
+            return i
+        self.showAvailableId()
+
+    def setAvailableId(self,theId):
+        self.available.append(theId)
+        self.connected.remove(theId)
+        self.showAvailableId()
+
+    def showAvailableId(self):
+        print('available:',self.available)
+        print('connected:',self.connected)
+
+    def threadedClient(self,conn):
+        myId = self.getAvailableId()
+        if myId is not None:
+            conn.send(str.encode(str(myId)))
+            self.mainloop(conn, myId)
+            # now conn is useless
+            self.setAvailableId(myId)
+            print(f"id {myId} will now be available")
+            conn.shutdown(socket.SHUT_RDWR)
+            conn.close()
+        else:
+            conn.send(str.encode(str('Game is Full')))
+        self.showAvailableId()
+
+    def mainloop(self, conn, myId):
+        running = True
+        while running:
+            try:
+                data = conn.recv(2048)
+                received = pickle.loads(data)
+                if data:
+                    self.vertex[received[0]] = received[1] # id = vec
+                    conn.sendall(pickle.dumps(self.vertex))
+                else:
+                    conn.send(pickle.dumps(str(myId) + ' left the game'))
+    
+            except Exception as err:
+                print(err, 'lol')
+                running = False
+                break
+
+    def acceptRequest(self):
+        self.connections = []
+        c = 0
+        while True:
+                c += 1
+                print(f'[{c}] Waiting')
+                conn,addr = self.socket.accept()
+                self.connections.append((conn,addr))
+                _thread.start_new_thread(self.threadedClient,(conn,))
+
+if __name__ == "__main__":
+    run = True
+    while run:
+        try:
+            n = int(input('How many peers'))
+        except:
+            print('By how many Peers I meant, specify a number...')
+            continue
+        Server(2)
+        run = True if input("restart server? (y/n) : ") == 'y' else False
+
+# received = [id, vec]

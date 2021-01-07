@@ -1,4 +1,5 @@
 #imports game modules
+from network import Network
 import sys
 import pygame
 import pickle
@@ -12,6 +13,7 @@ from settings import *
 import mapLoader
 import mapEditor
 import FontRenderer
+from network import Network
 #from gameMenu import Menu
 
 # order for the players will always remain
@@ -35,11 +37,13 @@ class Game:
         self.fpsClock = pygame.time.Clock()
         self.homeScreen()
     
-    def newGame(self):
-        #---------------- SPRITE STUFF ------------------#
+    def newGame(self, peers):
+        #--------- SPRITE OVER NETWORK STUFF ------------#
         self.playerGroup = pygame.sprite.Group()
-        self.player = sprites.Angel(pos=[200,100])
-        self.playerGroup.add(self.player)
+        self.peers = peers
+        self.net = Network()
+        self.vertex = [(50,50),(100,100),(150,150)][:self.peers]
+        self.addAllPlayers()
         #---------------- MAP INIT STUFF ----------------#
         level = 1 #self.startScreen()
         self.map = mapLoader.Map(level)
@@ -49,6 +53,16 @@ class Game:
         self.cam = pygame.math.Vector2(1.0,0.0)
         self.focus = [(self.settings.width + self.player.rect.width) // 2,(self.settings.height + self.player.rect.height) // 2]
         self.mainloop()
+        self.net.client.close()
+
+    def addAllPlayers(self):
+        # initialize all locations
+        for _id,location in zip(range(self.peers),self.vertex):
+            a = sprites.Angel(_id,location)
+            self.playerGroup.add(a)
+            if self.net.id == _id: # link this game session and player
+                self.player = a
+        print(self.player.id)
 
     def mainloop(self):
         while self.running:
@@ -68,20 +82,31 @@ class Game:
         self.cam[0] = int(self.cam[0])
         self.cam[1] = int(self.cam[1])
         self.map.group.update()
-        self.playerGroup.update()
+        self.player.update()
+        self.updateAllPlayers()
         #---------------- MAP UPDATES ---------------#
         if self.player.rect.y >= self.settings.height * 2:
             self.player.rect.topleft = random.choice([(0,0),(1000,0),(1700,0)])
             self.player.physics.vel = pygame.math.Vector2(0.0,0.0)
+
+    def updateAllPlayers(self):
+        try:
+            self.players_pos = pickle.loads(self.net.send(pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y)])))
+        except:
+            self.net.client.close()
+            homeScreen()
+        for player,pos in zip(self.playerGroup.sprites(),self.players_pos):
+            player.rect.x, player.rect.y = pos
+
 
     def blitAndFlip(self):
         self.display.fill("#101010")
         self.display.blit(pygame.transform.scale(self.screen,self.displaySize),(0,0))
         pygame.display.flip()
 
-    def drawPlayers(self):
+    def drawAllPlayers(self):
         for player in self.playerGroup.sprites():
-            self.screen.blit(player.image,(player.rect.x - self.cam[0],player.rect.y - self.cam[1]))
+            self.screen.blit(player.image,(player.rect.x - self.cam[0],player.rect.y - self.cam[1] ))
 
     def draw(self):
         # fill with black
@@ -89,8 +114,13 @@ class Game:
         # draw environment
         self.map.draw(self.screen, self.cam)
         # draw players
-        self.drawPlayers()
+        self.drawAllPlayers()
         #self.screen.blit(self.player.image,self.player.rect)
+
+    def pause(self):
+        self.running = False
+        self.net.client.close()
+        self.homeScreen()
 
     def handleEvents(self):
         for event in pygame.event.get():
@@ -99,8 +129,7 @@ class Game:
             if event.type == KEYDOWN:
                     self.player.start_move(event)
                     if event.key == K_ESCAPE:
-                        self.homeScreen()
-                        self.running = False
+                        self.pause()
                     if event.key == K_DOWN: self.player.dash()
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w: self.player.jumping = True
             if event.type == KEYUP:
@@ -136,7 +165,7 @@ class Game:
             elif self.player.physics.vel.y < 0:
                 self.player.colliding['top'] = True
                 self.player.rect.top = s.rect.bottom
-        return s
+        return s #the entity that collided last
 
     def editor(self):
         editor = mapEditor.MapEditor()
@@ -147,7 +176,7 @@ class Game:
         self.bg = pygame.image.load('./OtherData/home.png')
         selected = 9
         self.homeGroup = pygame.sprite.Group()
-        self.player = sprites.Angel([633,100],'#ec565c')
+        self.player = sprites.Angel(0,[633,100],'#ec565c')
         for i in [('options.png',(55,533),1),('play.png',(480,513),2),('exit.png',(889,533),3),('T.png',(632,154),9)]:
             self.homeGroup.add(MenuBlocks(i[0],i[1],i[2]))
         t = 1
@@ -169,7 +198,7 @@ class Game:
             K = pygame.key.get_pressed()
             if pressed == K_RETURN:
                     if selected == 1: self.editor()
-                    if selected == 2: self.newGame()
+                    if selected == 2: self.newGame(2)
                     if selected == 3:
                         self.home = False
                         self.screen.fill("#000000")
