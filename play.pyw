@@ -79,6 +79,8 @@ class Game:
         self.move(self.map.group)
         self.cam[0] += (self.player.rect.x - self.cam[0] - self.focus[0])/20
         self.cam[1] += (self.player.rect.y - self.cam[1] - self.focus[1])/20
+        if self.cam[0] < 0: self.cam[0] = 0
+        if self.cam[1] < 0: self.cam[1] = 0
         self.cam[0] = int(self.cam[0])
         self.cam[1] = int(self.cam[1])
         self.map.group.update()
@@ -94,7 +96,7 @@ class Game:
             self.players_pos = pickle.loads(self.net.send(pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y)])))
         except:
             self.net.client.close()
-            homeScreen()
+            self.homeScreen()
         for player,pos in zip(self.playerGroup.sprites(),self.players_pos):
             player.rect.x, player.rect.y = pos
 
@@ -120,7 +122,6 @@ class Game:
     def pause(self):
         self.running = False
         self.net.client.close()
-        self.homeScreen()
 
     def handleEvents(self):
         for event in pygame.event.get():

@@ -19,11 +19,13 @@ vec = pygame.math.Vector2
 colors = ['green','red','white','pink']
 class Angel(pygame.sprite.Sprite):
 
-    def __init__(self,pos = [0,0],color = '#27ae60'):
+    def __init__(self,_id,pos = [0,0],color = '#27ae60'):
         # essentials
         super(Angel,self).__init__()
         # import settings
         self.settings = Settings()
+        # set id
+        self.id = _id
         # surface and rect
         self.image = pygame.Surface((200,200))
         pygame.draw.circle(self.image,color,(100,100),99)
@@ -92,7 +94,6 @@ class Angel(pygame.sprite.Sprite):
             self.air_timer = False
             self.jump()
         if self.wall:
-            print('now walling',self.physics.vel)
             self.physics.vel.y += 0.0001
             if self.physics.vel.y > 0.6:
                 self.physics.vel.y = 0.6
