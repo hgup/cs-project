@@ -8,18 +8,19 @@ from pygame.locals import (
 from physics import Physics
 
 from settings import Settings
+
 controls = {
         0:{K_LEFT:'left',K_DOWN:'down',K_UP:'up',K_RIGHT:'right'},
         1:{K_a:'left',K_s:'down',K_w:'up',K_d:'right'},
         3:{K_h:'left',K_j:'down',K_k:'up',K_l:'right'},
         }
-base_acc = 0.3
-max_speed = 10
+
 vec = pygame.math.Vector2
-colors = ['green','red','white','pink']
+
+import json
 class Angel(pygame.sprite.Sprite):
 
-    def __init__(self,_id,pos = [0,0],color = '#27ae60'):
+    def __init__(self,_id,pos = [0,0],color = '#f0f0f0'):
         # essentials
         super(Angel,self).__init__()
         # import settings
@@ -110,11 +111,11 @@ class Angel(pygame.sprite.Sprite):
             movement = self.controls[e.key]
             self.moving = True
             if movement == 'left':
-                self.physics.acc.x = -base_acc
+                self.physics.acc.x = -self.settings.base_acc
                 self.last_state = 'left'
             if movement == 'right':
                 self.last_state = 'right'
-                self.physics.acc.x = +base_acc
+                self.physics.acc.x = +self.settings.base_acc
 
     def stop_move(self,e):
         try:
