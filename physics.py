@@ -33,6 +33,8 @@ class Physics:
         self.vel.x += self.acc.x
         if self.vel.x > 10:
             self.vel.x = 10
+        elif self.vel.x < -10:
+            self.vel.x = -10
 
     def motion_y(self):
         self.vel.y += self.acc.y
