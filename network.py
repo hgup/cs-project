@@ -5,11 +5,12 @@ class Network:
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = 'localhost'
-        self.port = 1233
+        self.port = 2020
         self.addr = (self.host, self.port)
         reply =self.connect()
         try:
-            self.id,x,y = eval(reply)
+            self.id,x,y,peers = eval(reply)
+            self.peers = peers
             self.initRect = (x,y)
         except:
             print(reply)

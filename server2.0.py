@@ -5,13 +5,20 @@ import sys
 import pickle
 from settings import Settings
 
-
+def printStart():
+    print('''
+Server 2.0 for Vertex 2020
+-----------------------------
+Dedicated at Thy lotus feet
+Don't play during study hours
+-----------------------------
+    ''')
 class Server:
 
     def __init__(self, peers):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server = ''
-        self.port = 1233
+        self.port = 2020
         self.server_ip = socket.gethostbyname(self.server)
         self.bind()
         self.peers = peers
@@ -61,7 +68,7 @@ class Server:
         myId = self.getAvailableId()
         if myId is not None:
             x,y = self.vertex[myId][0] # init Rect
-            conn.send(str.encode(str([myId,x,y]))) # available myId is actually the game.net.id
+            conn.send(str.encode(str([myId,x,y,self.peers]))) # available myId is actually the game.net.id
             self.mainloop(conn, myId)
             # now conn is useless
             self.setAvailableId(myId)
@@ -102,14 +109,15 @@ class Server:
                 _thread.start_new_thread(self.threadedClient,(conn,))
 
 if __name__ == "__main__":
+    printStart()
     run = True
     while run:
         try:
-            n = int(input('How many peers'))
+            n = int(input('Number of Peers:\t'))
         except:
             print('By how many Peers I meant, specify a number...')
             continue
-        Server(2)
+        Server(n)
         run = True if input("restart server? (y/n) : ") == 'y' else False
 
 # received = [id, vec]

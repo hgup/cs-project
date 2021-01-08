@@ -44,11 +44,11 @@ class Game:
         self.fpsClock = pygame.time.Clock()
         self.homeScreen()
     
-    def newGame(self, peers):
+    def newGame(self):
         #--------- SPRITE OVER NETWORK STUFF ------------#
         self.playerGroup = pygame.sprite.Group()
-        self.peers = peers
         self.net = Network()
+        self.peers = self.net.peers
         self.vertex = [[(50,50),0],[(100,100),0],[(150,150),0]][:self.peers]
         self.addAllPlayers()
         #---------------- MAP INIT STUFF ----------------#
@@ -69,7 +69,6 @@ class Game:
             self.playerGroup.add(a)
             if self.net.id == _id: # link this game session and player
                 self.player = a
-        print(self.player.id)
 
     def mainloop(self):
         while self.running:
@@ -120,7 +119,7 @@ class Game:
     def drawAllPlayers(self):
         for player in self.playerGroup.sprites():
             if self.vertex[player.id][1]:
-                self.screen.blit(player.image,(player.rect.x - self.cam[0],player.rect.y - self.cam[1] ))
+                self.screen.blit(player.image,(player.rect.x - self.cam[0], player.rect.y - self.cam[1]))
 
     def draw(self):
         # fill with black
@@ -225,7 +224,7 @@ class Game:
             K = pygame.key.get_pressed()
             if pressed == K_RETURN:
                     if selected == 1: self.editor()
-                    if selected == 2: self.newGame(2)
+                    if selected == 2: self.newGame()
                     if selected == 3:
                         self.home = False
                         self.screen.fill("#000000")
