@@ -19,7 +19,6 @@ class Block(pygame.sprite.Sprite):
 
     def __init__(self, pos, value, level):
         super().__init__()
-        print('lol, map editor not running')
         self.pos = pygame.math.Vector2(pos)
         self.value = int(value)
         self.level = level
@@ -59,15 +58,24 @@ class MenuBlock(pygame.sprite.Sprite):
         if editor.selectedBlock == self.value:
             self.image.set_alpha(255)
 
+def initDisplay():
+        pygame.display.init()
+        pygame.display.set_icon(pygame.image.load(r'OtherData/logo_round.png'))
+        pygame.display.set_caption('[V E R T E X]')
 
 class MapEditor:
 
-    def __init__(self):
+    def __init__(self, game = None):
         #------------------ PYGAME STUFF -------------------#
         self.settings = settings.Settings()
         self.alpha = 255
         self.displaySize = self.settings.getDisplaySize()
-        self.display = pygame.display.set_mode(self.displaySize,FULLSCREEN)
+        self.game = game
+        if game is None:
+            self.display = pygame.display.set_mode(self.displaySize,FULLSCREEN)
+        else:
+            self.fullscreen = game.fullscreen
+            self.display = self.game.screen
         self.screen = pygame.Surface((self.settings.width + 200,self.settings.height + 50))
         self.canvas = pygame.Surface((self.settings.width,self.settings.height))
         self.fpsClock = pygame.time.Clock()
@@ -106,6 +114,8 @@ class MapEditor:
 
     def blitAndFlip(self):
             self.display.fill("#101010")
+            print('aha gotchya')
+            print(self.display)
             self.display.blit(pygame.transform.scale(self.screen,self.displaySize),(0,0))
             pygame.display.flip()
 
@@ -156,6 +166,10 @@ class MapEditor:
                     self.g = 3
                 if event.key == K_d:
                     self.g = 4
+                if event.key == K_F11:
+                    if self.game is not None:
+                        self.game.toggleFullscreen()
+                        self.display = self.game.screen
             if event.type == KEYDOWN:
                 if event.key == K_1:
                     self.selectedBlock = 1
@@ -345,7 +359,8 @@ class MapEditor:
                     if event.key == K_BACKSPACE:
                         level = level[:-1]
                     else:
-                        level += event.unicode
+                        if event.key != K_RETURN:
+                            level += event.unicode
                 if event.type == KEYUP:
                     if event.key == K_ESCAPE:
                         self.fadeIn()

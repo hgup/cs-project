@@ -27,9 +27,12 @@ class MenuBlocks(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = pos
         self.value = val
+
 def initDisplay():
+        pygame.display.init()
         pygame.display.set_icon(pygame.image.load(r'OtherData/logo_round.png'))
         pygame.display.set_caption('[V E R T E X]')
+
 class Game:
     def __init__(self):
         #---------------- PYGAME STUFF ------------------#
@@ -65,7 +68,7 @@ class Game:
     def addAllPlayers(self):
         # initialize all locations
         for _id in range(self.peers):
-            a = sprites.Angel(_id,self.net.initRect)
+            a = sprites.Angel(_id,self.net.initRect,_id)
             self.playerGroup.add(a)
             if self.net.id == _id: # link this game session and player
                 self.player = a
@@ -79,6 +82,7 @@ class Game:
             # flip and tick
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
+
     def camUpdates(self):
         self.cam[0] += (self.player.rect.x - self.cam[0] - self.focus[0])/20
         self.cam[1] += (self.player.rect.y - self.cam[1] - self.focus[1])/20
@@ -148,20 +152,23 @@ class Game:
                     if event.key == K_DOWN: self.player.dash()
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w: self.player.jumping = True
                     if event.key == K_F11:
-                        self.fullscreen = not self.fullscreen
-                        if self.fullscreen:
-                                self.screen = pygame.display.set_mode((self.settings.width,self.settings.height),FULLSCREEN)
-                        else:
-                                os.environ['SDL_VIDEO_CENTERED'] = '1'
-                                pygame.display.quit()
-                                initDisplay()
-                                self.screen = pygame.display.set_mode((self.settings.width,self.settings.height),RESIZABLE)
-                                #os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (20,20)
+                        self.toggleFullscreen()
             if event.type == KEYUP:
                     self.player.stop_move(event)
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
                         self.player.jumping = False
                     if event.key == K_RETURN: return K_RETURN
+
+    def toggleFullscreen(self):
+        self.fullscreen = not self.fullscreen
+        if self.fullscreen:
+                self.display = pygame.display.set_mode((self.settings.width,self.settings.height),FULLSCREEN)
+        else:
+                os.environ['SDL_VIDEO_CENTERED'] = '1'
+                pygame.display.quit()
+                initDisplay()
+                self.display = pygame.display.set_mode((self.settings.width,self.settings.height),RESIZABLE)
+                #os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (20,20)
 
     def collisionDetect(self,entity,group):
         for entity2 in group.sprites():
@@ -193,7 +200,7 @@ class Game:
         return s #the entity that collided last
 
     def editor(self):
-        editor = mapEditor.MapEditor()
+        editor = mapEditor.MapEditor(self)
         pass
 
     def homeScreen(self):
@@ -201,7 +208,7 @@ class Game:
         self.bg = pygame.image.load('./OtherData/home.png')
         selected = 9
         self.homeGroup = pygame.sprite.Group()
-        self.player = sprites.Angel(0,[633,100],'#ec565c')
+        self.player = sprites.Angel(0,[633,100],3)
         for i in [('options.png',(55,533),1),('play.png',(480,513),2),('exit.png',(889,533),3),('T.png',(632,154),9)]:
             self.homeGroup.add(MenuBlocks(i[0],i[1],i[2]))
         t = 1

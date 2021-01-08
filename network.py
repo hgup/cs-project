@@ -5,7 +5,7 @@ class Network:
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = 'localhost'
-        self.port = 2020
+        self.port = 9999
         self.addr = (self.host, self.port)
         reply =self.connect()
         try:

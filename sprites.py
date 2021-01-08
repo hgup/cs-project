@@ -20,7 +20,7 @@ vec = pygame.math.Vector2
 import json
 class Angel(pygame.sprite.Sprite):
 
-    def __init__(self,_id,pos = [0,0],color = '#f0f0f0'):
+    def __init__(self,_id,pos = [0,0],color = 0):
         # essentials
         super(Angel,self).__init__()
         # import settings
@@ -31,7 +31,7 @@ class Angel(pygame.sprite.Sprite):
         self.image = pygame.Surface((200,200))
         pygame.draw.circle(self.image,color,(100,100),99)
         self.image = pygame.transform.scale(self.image,(30,30))
-        self.image.fill(color)
+        self.image.fill(self.settings.colors[color])
         self.rect = self.image.get_rect()
         self.rect.x,self.rect.y = pos
         self.image.set_colorkey('#000000')

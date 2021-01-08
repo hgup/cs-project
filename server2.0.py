@@ -18,7 +18,7 @@ class Server:
     def __init__(self, peers):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server = ''
-        self.port = 2020
+        self.port = 9999
         self.server_ip = socket.gethostbyname(self.server)
         self.bind()
         self.peers = peers
@@ -113,7 +113,10 @@ if __name__ == "__main__":
     run = True
     while run:
         try:
-            n = int(input('Number of Peers:\t'))
+            n = int(input('\tNUMBER OF PEERS: '))
+            print("""
+SERVER STARTED!
+---------------""")
         except:
             print('By how many Peers I meant, specify a number...')
             continue
