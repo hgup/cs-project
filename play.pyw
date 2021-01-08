@@ -27,7 +27,9 @@ class MenuBlocks(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = pos
         self.value = val
-
+def initDisplay():
+        pygame.display.set_icon(pygame.image.load(r'OtherData/logo_round.png'))
+        pygame.display.set_caption('[V E R T E X]')
 class Game:
     def __init__(self):
         #---------------- PYGAME STUFF ------------------#
@@ -35,6 +37,7 @@ class Game:
         os.environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.init()
         self.displaySize = self.settings.getDisplaySize()
+        initDisplay()
         #self.screen = pygame.Surface((self.settings.width,self.settings.height))
         self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))#,FULLSCREEN)
         self.fullscreen = False
@@ -152,7 +155,7 @@ class Game:
                         else:
                                 os.environ['SDL_VIDEO_CENTERED'] = '1'
                                 pygame.display.quit()
-                                pygame.display.init()
+                                initDisplay()
                                 self.screen = pygame.display.set_mode((self.settings.width,self.settings.height),RESIZABLE)
                                 #os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (20,20)
             if event.type == KEYUP:
