@@ -114,8 +114,6 @@ class MapEditor:
 
     def blitAndFlip(self):
             self.display.fill("#101010")
-            print('aha gotchya')
-            print(self.display)
             self.display.blit(pygame.transform.scale(self.screen,self.displaySize),(0,0))
             pygame.display.flip()
 
@@ -201,21 +199,30 @@ class MapEditor:
                     self.rightClick = False
             if event.type == MOUSEWHEEL:
                 if event.y < 0: # mouse down
+                    mx,my = pygame.mouse.get_pos()
                     self.map_coords_x = numpy.arange(64) * self.size
                     self.map_coords_y = numpy.arange(36) * self.size
                     self.size -= 2
                     if self.size < 20:
                         self.size = 20
+                    else:
+                        self.cam.x += 64
+                        self.cam.y += 36
                 elif event.y > 0: # mouse up
+                    mx,my = pygame.mouse.get_pos()
                     self.size += 2
                     if self.size > 40:
                         self.size = 40
+                    else:
+                        self.cam.x -= 64
+                        self.cam.y -= 36
                 self.map_coords_x = numpy.arange(64) * self.size
                 self.map_coords_y = numpy.arange(36) * self.size
 
     def update(self):
         if self.scrolling:
-            self.cam += pygame.mouse.get_rel()
+            m = pygame.mouse.get_rel()
+            self.cam += m
         mx,my = pygame.mouse.get_pos()
         #---------------- CHECK ON CLICK -------------------#
         for block in self.blockGroup.sprites():
@@ -367,13 +374,16 @@ class MapEditor:
                         pygame.quit()
                         sys.exit()
                     if event.key == K_RETURN:
-                        val = int(level)
-                        if val in [1,2,3]:
-                            self.fadeIn()
-                            return val
+                        if level:
+                            val = int(level)
+                            if val in [1,2,3]:
+                                self.fadeIn()
+                                return val
+                            else:
+                                self.fadeIn()
+                                self.sorry('Sorry, that level is not Available.')
                         else:
-                            self.fadeIn()
-                            self.sorry('Sorry, that level is not Available.')
+                            self.sorry("Don't leave it blank")
 
             self.screen.fill("#101010")
             IN.renderFonts(level)
