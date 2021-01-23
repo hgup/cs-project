@@ -17,7 +17,7 @@ class Server:
 
     def __init__(self, peers):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server = ''
+        self.server = 'localhost'
         self.port = 9999
         self.server_ip = socket.gethostbyname(self.server)
         self.bind()

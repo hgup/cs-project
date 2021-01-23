@@ -142,7 +142,8 @@ class Game:
             pass
 
     def handleEvents(self):
-        for event in pygame.event.get():
+        print(a)
+        for event in a:
             if event.type == QUIT:
                 self.running = False
             if event.type == KEYDOWN:

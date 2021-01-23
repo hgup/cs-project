@@ -30,3 +30,5 @@ class Network:
         except Exception as err:
             print(str(err))
 
+if __name__ == "__main__":
+    n = Network()
