@@ -106,6 +106,7 @@ class Game:
             self.player.physics.vel = pygame.math.Vector2(0.0,0.0)
 
     def updateAllPlayers(self):
+        # this is just to test
         try:
             self.vertex = pickle.loads(self.net.send(pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y)])))
         except:
