@@ -6,6 +6,7 @@ import pygame
 import pickle
 import numpy
 import random
+import time
 from pygame.locals import *
 # import my modules
 import sprites
@@ -46,7 +47,7 @@ class Game:
         self.fullscreen = False
         self.fpsClock = pygame.time.Clock()
         self.homeScreen()
-    
+
     def newGame(self):
         #--------- SPRITE OVER NETWORK STUFF ------------#
         self.playerGroup = pygame.sprite.Group()
@@ -76,7 +77,9 @@ class Game:
     def mainloop(self):
         while self.running:
             # handle, update and draw
-            self.handleEvents()
+            events = pygame.event.get()
+            self.handleGameEvents(events)
+            Game.handlePlayerEvents(self.player,events)
             self.update()
             self.draw()
             # flip and tick
@@ -141,35 +144,33 @@ class Game:
             self.net.client.close()
         except:
             pass
-
-    def handleEvents(self):
-        for event in pygame.event.get():
+    def handleGameEvents(self,events):
+        for event in events:
             if event.type == QUIT:
                 self.running = False
             if event.type == KEYDOWN:
-                    self.player.start_move(event)
-                    if event.key == K_ESCAPE:
-                        self.pause()
-                    if event.key == K_DOWN: self.player.dash()
-                    if event.key == K_SPACE or event.key == K_UP or event.key == K_w: self.player.jumping = True
-                    if event.key == K_F11:
-                        self.toggleFullscreen()
+                if event.key == K_F11:
+                    self.toggleFullscreen()
+                if event.type == K_ESCAPE:
+                    self.pause()
             if event.type == KEYUP:
-                    self.player.stop_move(event)
+                if event.key == K_RETURN: return K_RETURN
+
+    def handlePlayerEvents(player,events):
+        for event in events:
+            if event.type == KEYDOWN:
+                    player.start_move(event)
+                    if event.key == K_DOWN: player.dash()
+                    if event.key == K_SPACE or event.key == K_UP or event.key == K_w: player.jumping = True
+            if event.type == KEYUP:
+                    player.stop_move(event)
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
-                        self.player.jumping = False
+                        player.jumping = False
                     if event.key == K_RETURN: return K_RETURN
 
     def toggleFullscreen(self):
         self.fullscreen = not self.fullscreen
-        if self.fullscreen:
-                self.display = pygame.display.set_mode((self.settings.width,self.settings.height),FULLSCREEN)
-        else:
-                os.environ['SDL_VIDEO_CENTERED'] = '1'
-                pygame.display.quit()
-                initDisplay()
-                self.display = pygame.display.set_mode((self.settings.width,self.settings.height),RESIZABLE)
-                #os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (20,20)
+        pygame.display.toggle_fullscreen()
 
     def collisionDetect(self,entity,group):
         for entity2 in group.sprites():
@@ -225,7 +226,9 @@ class Game:
 
         while self.home:
             self.screen.blit(self.bg,(0,0))
-            pressed = self.handleEvents()
+            events = pygame.event.get()
+            Game.handlePlayerEvents(self.player,events)
+            pressed = self.handleGameEvents(events)
             s =self.move(self.homeGroup)
             if self.player.rect.y  > 1280: self.player.rect.topleft = (633,100)
             selected = changeSelected(s, selected)
