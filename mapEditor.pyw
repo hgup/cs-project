@@ -9,7 +9,6 @@ from pygame.locals import *
 import SpriteImages
 SpriteImages = SpriteImages.SpriteImages()
 import FontRenderer
-import mapLoader
 # make a click and go level editor
     # mouse over a block when left click... creates a block
     # mouce over with right click ... deletes a block
@@ -96,7 +95,8 @@ class MapEditor:
 
         #----------------- RUNTIME LOGIC STUFF -------------#
         self.size = 40
-        self.heading = FontRenderer.CenteredText("MAP EDITOR: (LEVEL %d)"%(self.level),(self.settings.width//2 + 100,25))
+        self.heading = FontRenderer.CenteredText("MAP EDITOR: (LEVEL %d)"%(self.level),
+                (self.settings.width//2 + 100,25))
         self.running = True
         self.scrolling = False
         self.leftClick = False
@@ -111,6 +111,8 @@ class MapEditor:
         self.loadMap()
         self.loadBlocks()
         self.mainloop()
+
+
 
     def blitAndFlip(self):
             self.display.fill("#101010")
@@ -156,14 +158,6 @@ class MapEditor:
                         self.confirm('Do you want to Save?')
                     else:
                         self.confirm("Do you want to quit?")
-                if event.key == K_w:
-                    self.g = 1
-                if event.key == K_s:
-                    self.g = 2
-                if event.key == K_a:
-                    self.g = 3
-                if event.key == K_d:
-                    self.g = 4
                 if event.key == K_F11:
                     if self.game is not None:
                         self.game.toggleFullscreen()
@@ -321,8 +315,10 @@ class MapEditor:
 
     def drawGridLines(self):
         if self.showGridLines:
-            pygame.draw.line(self.canvas, '#87afaf', (self.blit_coords_x[32],0), (self.blit_coords_x[32] ,2600))
-            pygame.draw.line(self.canvas, '#87afaf', (-40,self.blit_coords_y[18]), (2600,self.blit_coords_y[18]))
+            pygame.draw.line(self.canvas, '#87afaf',
+                    (self.blit_coords_x[32],0), (self.blit_coords_x[32] ,2600))
+            pygame.draw.line(self.canvas, '#87afaf',
+                    (-40,self.blit_coords_y[18]), (2600,self.blit_coords_y[18]))
 
     def limit(self):
         if self.cam[0] > 40:
@@ -353,8 +349,6 @@ class MapEditor:
         self.blitAndFlip()
         pygame.time.delay(50)
 
-    def fadeOut(self):
-        pass
     def startScreen(self):
         ques = FontRenderer.CenteredText('Map to Edit?',(500,300),textSize = 30)
         warningNum = FontRenderer.CenteredText('*Level should be numeric',(600,500))
@@ -371,8 +365,6 @@ class MapEditor:
                 if event.type == KEYUP:
                     if event.key == K_ESCAPE:
                         self.fadeIn()
-                        pygame.quit()
-                        sys.exit()
                     if event.key == K_RETURN:
                         if level:
                             val = int(level)

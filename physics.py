@@ -15,6 +15,7 @@ f = {
         'collide':(0.5,1)
 }
 
+
 class Physics:
     def __init__(self,rect,density):
         self.pos = vec(0,0) #top left of mass

@@ -56,12 +56,5 @@ class Map:
         # be sure to update before calling
         for y in range(36):
             for x in range(64):
-                screen.blit(self.sprites[y][x].image,(self.sprites[y][x].rect.x - cam[0],self.sprites[y][x].rect.y - cam[1]))
-
-        
-        
-
-if __name__ == "__main__":
-    _map = Map(1)
-    print(len(_map.data[0]))
-    print(len(_map.data))
+                screen.blit(self.sprites[y][x].image,
+                        (self.sprites[y][x].rect.x - cam[0],self.sprites[y][x].rect.y - cam[1]))

@@ -43,7 +43,7 @@ class Game:
         self.displaySize = self.settings.getDisplaySize()
         initDisplay()
         #self.screen = pygame.Surface((self.settings.width,self.settings.height))
-        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))#,FULLSCREEN)
+        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))
         self.fullscreen = False
         self.fpsClock = pygame.time.Clock()
         self.homeScreen()
@@ -62,7 +62,8 @@ class Game:
         #---------------- GAME RUNTIME STUFF ------------#
         self.running = True
         self.cam = pygame.math.Vector2(1.0,0.0)
-        self.focus = [(self.settings.width - self.player.rect.width) // 2,(self.settings.height - self.player.rect.height) // 2]
+        self.focus = [(self.settings.width - self.player.rect.width) // 2,
+                (self.settings.height - self.player.rect.height) // 2]
         self.mainloop()
         self.net.client.close()
 
@@ -78,6 +79,7 @@ class Game:
         while self.running:
             # handle, update and draw
             events = pygame.event.get()
+            print(events)
             self.handleGameEvents(events)
             Game.handlePlayerEvents(self.player,events)
             self.update()
@@ -111,7 +113,9 @@ class Game:
     def updateAllPlayers(self):
         # this is just to test
         try:
-            self.vertex = pickle.loads(self.net.send(pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y)])))
+            self.vertex = pickle.loads(self.net.send(
+                pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y)])
+                ))
         except:
             self.net.client.close()
             self.homeScreen()
@@ -127,7 +131,8 @@ class Game:
     def drawAllPlayers(self):
         for player in self.playerGroup.sprites():
             if self.vertex[player.id][1]:
-                self.screen.blit(player.image,(player.rect.x - self.cam[0], player.rect.y - self.cam[1]))
+                self.screen.blit(player.image,
+                        (player.rect.x - self.cam[0], player.rect.y - self.cam[1]))
 
     def draw(self):
         # fill with black
@@ -144,6 +149,7 @@ class Game:
             self.net.client.close()
         except:
             pass
+            
     def handleGameEvents(self,events):
         for event in events:
             if event.type == QUIT:
@@ -151,17 +157,18 @@ class Game:
             if event.type == KEYDOWN:
                 if event.key == K_F11:
                     self.toggleFullscreen()
-                if event.type == K_ESCAPE:
-                    self.pause()
             if event.type == KEYUP:
                 if event.key == K_RETURN: return K_RETURN
+                if event.key == K_ESCAPE:
+                    self.pause()
 
     def handlePlayerEvents(player,events):
         for event in events:
             if event.type == KEYDOWN:
                     player.start_move(event)
                     if event.key == K_DOWN: player.dash()
-                    if event.key == K_SPACE or event.key == K_UP or event.key == K_w: player.jumping = True
+                    if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
+                        player.jumping = True
             if event.type == KEYUP:
                     player.stop_move(event)
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
@@ -211,7 +218,8 @@ class Game:
         selected = 9
         self.homeGroup = pygame.sprite.Group()
         self.player = sprites.Angel(0,[633,100],3)
-        for i in [('options.png',(55,533),1),('play.png',(480,513),2),('exit.png',(889,533),3),('T.png',(632,154),9)]:
+        for i in [('options.png',(55,533),1),('play.png',(480,513),2),
+                ('exit.png',(889,533),3),('T.png',(632,154),9)]:
             self.homeGroup.add(MenuBlocks(i[0],i[1],i[2]))
         t = 1
         def changeSelected(x,selected):

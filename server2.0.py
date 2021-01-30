@@ -46,6 +46,7 @@ class Server:
             return i
         self.showAvailableId()
 
+
     def setAvailableId(self,theId):
         self.available.append(theId)
         self.connected.remove(theId)
@@ -68,7 +69,8 @@ class Server:
         myId = self.getAvailableId()
         if myId is not None:
             x,y = self.vertex[myId][0] # init Rect
-            conn.send(str.encode(str([myId,x,y,self.peers]))) # available myId is actually the game.net.id
+            # available myId is actually the game.net.id
+            conn.send(str.encode(str([myId,x,y,self.peers]))) 
             self.mainloop(conn, myId)
             # now conn is useless
             self.setAvailableId(myId)

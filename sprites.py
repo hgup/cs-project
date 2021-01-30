@@ -48,6 +48,7 @@ class Angel(pygame.sprite.Sprite):
         self.stamina = 10.0
         self.capJump = 12
 
+
     def move_x(self):
         # apply physics to player.physics.rect
         self.physics.friction('grass')
@@ -132,7 +133,3 @@ class Angel(pygame.sprite.Sprite):
 
     def dash(self):
         self.physics.acc.y = 3
-
-    def debug(self):
-        pass
-
