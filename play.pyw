@@ -8,6 +8,7 @@ import numpy
 import random
 import time
 from pygame.locals import *
+import _thread
 # import my modules
 import sprites
 from settings import *
@@ -213,14 +214,17 @@ class Game:
 
     def homeScreen(self):
         self.home = True
-        bg = pygame.image.load('./OtherData/home.png')
+        bg = pygame.image.load('./OtherData/home.png').convert()
         selected = 9
+        homeSprites = []
         self.homeGroup = pygame.sprite.Group()
         self.player = sprites.Angel(0,[633,100],3)
         for i in [('options.png',(55,533),1),('play.png',(480,513),2),
                 ('exit.png',(889,533),3),('T.png',(632,154),9)]:
-            self.homeGroup.add(MenuBlocks(i[0],i[1],i[2]))
-        t = 1
+            x = MenuBlocks(i[0],i[1],i[2])
+            self.homeGroup.add(x)
+            homeSprites.append(x)
+
         def changeSelected(x,selected):
             for homeButton in self.homeGroup:
                 if homeButton is x:
@@ -233,17 +237,25 @@ class Game:
         selected = 4
         actions = [None,self.editor,self.newGame,self.newGame]
 
+        done = True
+        doneSelected = False
         while self.home:
             events = pygame.event.get()
-            Game.handlePlayerEvents(self.player,events)
+            s = self.move(self.homeGroup)
+            if not doneSelected:
+                Game.handlePlayerEvents(self.player,events)
+                if self.player.rect.y  > 800: self.player.rect.topleft = (633,100)
+            else:
+                if done:
+                    homeSprites[selected - 1].kill()
+                    done = False
+                if self.player.rect.y > 800:
+                    self.home = False
             pressed = self.handleGameEvents(events)
-            s =self.move(self.homeGroup)
-            if self.player.rect.y  > 1280: self.player.rect.topleft = (633,100)
             selected = changeSelected(s, selected)
-            K = pygame.key.get_pressed()
             if pressed == K_RETURN:
-                if selected in [1,2,3]:
-                    break
+                if selected in (1,3): break
+                if selected == 2: doneSelected = True
             self.player.update()
             self.screen.blit(bg,(0,0))
             self.screen.blit(self.player.image,self.player.rect.topleft)
@@ -251,35 +263,64 @@ class Game:
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
 
-        self.player.kill()
         if selected != 3:
             actions[selected]()
+        self.player.kill()
 
     def joinGame(self):
-        IN = FontRenderer.Button(self.address,(703,264),color=None,key = '#38b6ff',textSize = 30)
+
+        selected = 9
+        joinSprites = []
+        joinGroup = pygame.sprite.Group()
+        self.player.rect.topleft = (80,-10)
+        for i in [('desk.png',(77,600),1)]:#,('join.png',(700,500),2)]:
+            x = MenuBlocks(i[0],i[1],i[2])
+            joinGroup.add(x)
+            joinSprites.append(x)
+
+        ADD = FontRenderer.Button(self.address,(703,264),color=None,key = '#38b6ff',textSize = 30)
         PORT = FontRenderer.Button(self.port,(1030,264),color=None,key = '#38b6ff',textSize = 30)
-        bg_image = pygame.image.load(r'./OtherData/Join_Screen.png')
+        bg_image = pygame.image.load(r'./OtherData/Join_Screen.png').convert()
+        ADDselected = pygame.Surface((5,80)) #483,224
+        ADDselected.fill('#ffffff')
+        PORTselected = pygame.Surface((5,60)) #938,234
+        PORTselected.fill('#ffffff')
+        add = True
+
         while True:
-            self.screen.blit(bg_image,(0,0))
+            if self.player.rect.y  > 800: self.player.rect.topleft = (80,-10)
             events = pygame.event.get()
-            pressed = self.handleGameEvents(events)
-            if pressed == K_ESCAPE:
-                return False
+            s = self.move(joinGroup)
             for event in events:
                 if event.type == KEYDOWN:
                     if event.key == K_BACKSPACE:
-                        self.address = self.address[:-1]
+                        if add: self.address = self.address[:-1]
+                        else: self.port = self.port[:-1]
                     else:
-                        if event.key != K_RETURN and event.key != K_ESCAPE:
-                            self.address += event.unicode
+                        if event.key != K_RETURN and event.key != K_ESCAPE and event.key != K_TAB:
+                            if add: self.address += event.unicode
+                            else: self.port += event.unicode
+                    if event.key == K_TAB:
+                        add = not add
                 if event.type == KEYUP:
                     if event.key == K_RETURN:
                         return True
-
-            IN.renderFonts(self.address)
-            IN.draw(self.screen)
+            Game.handlePlayerEvents(self.player,events)
+            pressed = self.handleGameEvents(events)
+            if pressed == K_ESCAPE:
+                return False
+            self.player.update()
+            self.screen.blit(bg_image,(0,0))
+            if add:
+                self.screen.blit(ADDselected,(483,224))
+            else:
+                self.screen.blit(PORTselected,(938,234))
+            ADD.renderFonts(self.address)
+            ADD.draw(self.screen)
             PORT.renderFonts(self.port)
             PORT.draw(self.screen)
+            joinGroup.draw(self.screen)
+            self.screen.blit(self.player.image,self.player.rect.topleft)
             self.fpsClock.tick(self.settings.fps)
             pygame.display.flip()
 

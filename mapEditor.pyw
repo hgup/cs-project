@@ -159,7 +159,7 @@ class MapEditor:
                     if self.updated:
                         self.confirm('Do you want to Save?')
                     else:
-                        self.confirm("Do you want to quit?")
+                        self.confirm("Do you want to quit?",no_e = False)
                 if event.key == K_F11:
                     if self.game is not None:
                         pygame.display.toggle_fullscreen()
@@ -376,7 +376,8 @@ class MapEditor:
                         level = level[:-1]
                     else:
                         if event.unicode.isnumeric():
-                            level += event.unicode
+                            if len(level) < 3:
+                                level += event.unicode
                 if event.type == KEYUP:
                     if event.key == K_ESCAPE:
                         self.fadeIn("#ffffff")
@@ -412,8 +413,8 @@ class MapEditor:
             self.fpsClock.tick(fps)
 
 
-    def confirm(self,text):
-        self.fadeIn()
+    def confirm(self,text, no_e = True):
+        self.fadeIn('#ffffff')
         bg = pygame.transform.scale(pygame.image.load("./OtherData/map_editor.png"),self.display.get_size())
         qes = FontRenderer.CenteredText(text,(640,300),color = "#101010",textSize=40)
         yes = FontRenderer.RButton('yes',(640,400),color = (24,88,24))
@@ -425,7 +426,8 @@ class MapEditor:
             self.display.blit(bg,(0,0))
             qes.draw(self.display)
             yes.draw(self.display)
-            no.draw(self.display)
+            if no_e:
+                no.draw(self.display)
             cancel.draw(self.display)
             self.display.blit(self.cursor,pygame.mouse.get_pos())
             self.drawCursor()
@@ -450,9 +452,10 @@ class MapEditor:
                 self.fadeIn('#ffffff')
                 self.writeMap()
                 break
-            if no.hover(mx,my) and click:
-                    self.fadeIn("#ffffff")
-                    break
+            if no_e:
+                if no.hover(mx,my) and click:
+                        self.fadeIn("#ffffff")
+                        break
             if cancel.hover(mx,my) and click:
                     self.fadeIn()
                     self.running = True
