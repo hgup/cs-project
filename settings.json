@@ -14,5 +14,7 @@
     "playerWidth" : 20,
     "playerHeight" : 20,
     "gravity" : 0.5,
-    "bounds": 70
+    "bounds": 70,
+    "lastAddress":"localhost",
+    "lastPort":"9999"
 }

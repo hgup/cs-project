@@ -103,6 +103,7 @@ class Server:
     def acceptRequest(self):
         self.connections = []
         c = 0
+        print(f'[SERVER] OPEN AT PORT {self.port}')
         while True:
                 c += 1
                 print(f'[{c}] Waiting')

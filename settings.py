@@ -15,6 +15,8 @@ class Settings:
         self.block_size = data["block_size"]
         self.colors = data["colors"]
         self.base_acc = data["base_acc"]
+        self.lastAddress = data["lastAddress"]
+        self.lastPort = data["lastPort"]
 
     def getDisplaySize(self):
         try:

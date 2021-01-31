@@ -10,7 +10,6 @@ import time
 from pygame.locals import *
 # import my modules
 import sprites
-import level
 from settings import *
 import mapLoader
 import mapEditor
@@ -38,6 +37,8 @@ class Game:
     def __init__(self):
         #---------------- PYGAME STUFF ------------------#
         self.settings = Settings()
+        self.address = self.settings.lastAddress
+        self.port = self.settings.lastPort
         os.environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.init()
         self.displaySize = self.settings.getDisplaySize()
@@ -49,9 +50,10 @@ class Game:
         self.homeScreen()
 
     def newGame(self):
+        self.running = self.joinGame()
         #--------- SPRITE OVER NETWORK STUFF ------------#
         self.playerGroup = pygame.sprite.Group()
-        self.net = Network()
+        self.net = Network(self.address,self.port)
         self.peers = self.net.peers
         self.vertex = [[(50,50),0],[(100,100),0],[(150,150),0]][:self.peers]
         self.addAllPlayers()
@@ -60,12 +62,12 @@ class Game:
         self.map = mapLoader.Map(level)
         self.bg = pygame.image.load(r'./WorldData/Level '+str(level)+r'/bg.png')
         #---------------- GAME RUNTIME STUFF ------------#
-        self.running = True
         self.cam = pygame.math.Vector2(1.0,0.0)
         self.focus = [(self.settings.width - self.player.rect.width) // 2,
                 (self.settings.height - self.player.rect.height) // 2]
         self.mainloop()
         self.net.client.close()
+        self.homeScreen()
 
     def addAllPlayers(self):
         # initialize all locations
@@ -79,8 +81,9 @@ class Game:
         while self.running:
             # handle, update and draw
             events = pygame.event.get()
-            print(events)
-            self.handleGameEvents(events)
+            pressed = self.handleGameEvents(events)
+            if pressed == K_ESCAPE:
+                self.running = False
             Game.handlePlayerEvents(self.player,events)
             self.update()
             self.draw()
@@ -118,7 +121,7 @@ class Game:
                 ))
         except:
             self.net.client.close()
-            self.homeScreen()
+            self.running = False
         for player,vert in zip(self.playerGroup.sprites(),self.vertex):
             player.rect.x, player.rect.y = vert[0]
 
@@ -149,17 +152,18 @@ class Game:
             self.net.client.close()
         except:
             pass
+
     def handleGameEvents(self,events):
         for event in events:
             if event.type == QUIT:
                 self.running = False
             if event.type == KEYDOWN:
                 if event.key == K_F11:
-                    self.toggleFullscreen()
+                    self.fullscreen = not self.fullscreen
+                    pygame.display.toggle_fullscreen()
             if event.type == KEYUP:
                 if event.key == K_RETURN: return K_RETURN
-                if event.key == K_ESCAPE:
-                    self.pause()
+                if event.key == K_ESCAPE: return K_ESCAPE
 
     def handlePlayerEvents(player,events):
         for event in events:
@@ -173,10 +177,6 @@ class Game:
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
                         player.jumping = False
                     if event.key == K_RETURN: return K_RETURN
-
-    def toggleFullscreen(self):
-        self.fullscreen = not self.fullscreen
-        pygame.display.toggle_fullscreen()
 
     def collisionDetect(self,entity,group):
         for entity2 in group.sprites():
@@ -209,11 +209,11 @@ class Game:
 
     def editor(self):
         editor = mapEditor.MapEditor(self)
-        pass
+        self.homeScreen()
 
     def homeScreen(self):
         self.home = True
-        self.bg = pygame.image.load('./OtherData/home.png')
+        bg = pygame.image.load('./OtherData/home.png')
         selected = 9
         self.homeGroup = pygame.sprite.Group()
         self.player = sprites.Angel(0,[633,100],3)
@@ -230,9 +230,10 @@ class Game:
                 else:
                     homeButton.image.set_alpha(180)
             return selected
+        selected = 4
+        actions = [None,self.editor,self.newGame,self.newGame]
 
         while self.home:
-            self.screen.blit(self.bg,(0,0))
             events = pygame.event.get()
             Game.handlePlayerEvents(self.player,events)
             pressed = self.handleGameEvents(events)
@@ -241,52 +242,46 @@ class Game:
             selected = changeSelected(s, selected)
             K = pygame.key.get_pressed()
             if pressed == K_RETURN:
-                    if selected == 1: self.editor()
-                    if selected == 2: self.newGame()
-                    if selected == 3:
-                        self.home = False
-                        self.screen.fill("#000000")
-
+                if selected in [1,2,3]:
+                    break
             self.player.update()
+            self.screen.blit(bg,(0,0))
             self.screen.blit(self.player.image,self.player.rect.topleft)
             self.homeGroup.draw(self.screen)
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
-        self.player.kill()
 
-    def startScreen(self):
-        ques = FontRenderer.CenteredText('MAP TO PLAY?',(500,300),textSize = 30)
-        warningNum = FontRenderer.CenteredText('*Level should be numeric',(600,500))
-        IN = FontRenderer.Button('   ',(900,300))
-        level = ''
+        self.player.kill()
+        if selected != 3:
+            actions[selected]()
+
+    def joinGame(self):
+        IN = FontRenderer.Button(self.address,(703,264),color=None,key = '#38b6ff',textSize = 30)
+        PORT = FontRenderer.Button(self.port,(1030,264),color=None,key = '#38b6ff',textSize = 30)
+        bg_image = pygame.image.load(r'./OtherData/Join_Screen.png')
         while True:
-            print('start')
-            self.screen.fill("#101010")
-            for event in pygame.event.get():
+            self.screen.blit(bg_image,(0,0))
+            events = pygame.event.get()
+            pressed = self.handleGameEvents(events)
+            if pressed == K_ESCAPE:
+                return False
+            for event in events:
                 if event.type == KEYDOWN:
                     if event.key == K_BACKSPACE:
-                        level = level[:-1]
+                        self.address = self.address[:-1]
                     else:
-                        level += event.unicode
+                        if event.key != K_RETURN and event.key != K_ESCAPE:
+                            self.address += event.unicode
                 if event.type == KEYUP:
-                    if event.key == K_ESCAPE:
-                        self.fadeIn()
-                        pygame.quit()
-                        sys.exit()
                     if event.key == K_RETURN:
-                        val = int(level)
-                        if val in [1,2,3]:
-                            self.fadeIn()
-                            return val
-                        else:
-                            self.fadeIn()
-                            self.sorry('Sorry, that level is not Available.')
+                        return True
 
-            IN.renderFonts(level)
+            IN.renderFonts(self.address)
             IN.draw(self.screen)
-            ques.draw(self.screen)
-            if not level.isnumeric():
-                warningNum.draw(self.screen)
+            PORT.renderFonts(self.port)
+            PORT.draw(self.screen)
+            self.fpsClock.tick(self.settings.fps)
+            pygame.display.flip()
 
     def sorry(self,text):
         messege = FontRenderer.CenteredText(text,(500,300))

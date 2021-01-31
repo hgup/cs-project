@@ -14,6 +14,7 @@ import FontRenderer
     # mouce over with right click ... deletes a block
 
 #-------------------THE BASIC BLOCK------------------------#
+fps = 90
 class Block(pygame.sprite.Sprite):
 
     def __init__(self, pos, value, level):
@@ -82,37 +83,36 @@ class MapEditor:
 
         #------------------ MAP ID STUFF -------------------#
         self.level = self.startScreen() #1,2,3,4...
-        self.path = r'./WorldData/Level ' +str(self.level)+ r'/'
-        self.map = numpy.zeros((36,64))
-        self.map_coords_x = numpy.arange(64) * 40
-        self.map_coords_y = numpy.arange(36) * 40
-        self.cam = pygame.math.Vector2(0,0)
-        self.sprites = SpriteImages.levels[self.level]
+        if self.level is not None:
+            self.path = r'./WorldData/Level ' +str(self.level)+ r'/'
+            self.map = numpy.zeros((36,64))
+            self.map_coords_x = numpy.arange(64) * 40
+            self.map_coords_y = numpy.arange(36) * 40
+            self.cam = pygame.math.Vector2(0,0)
+            self.sprites = SpriteImages.levels[self.level]
 
-        #------------------ Menu Blocks ----------------#
-        self.menuBlocks = pygame.sprite.Group()
-        self.addMenuBlocks()
+            #------------------ Menu Blocks ----------------#
+            self.menuBlocks = pygame.sprite.Group()
+            self.addMenuBlocks()
 
-        #----------------- RUNTIME LOGIC STUFF -------------#
-        self.size = 40
-        self.heading = FontRenderer.CenteredText("MAP EDITOR: (LEVEL %d)"%(self.level),
-                (self.settings.width//2 + 100,25))
-        self.running = True
-        self.scrolling = False
-        self.leftClick = False
-        self.rightClick = False
-        self.showCursor = True
-        self.cursor = pygame.image.load(r'./OtherData/cursor_normal.png').convert()
-        self.cursor.set_colorkey("#000000")
-        self.cursor = pygame.transform.scale(self.cursor,(self.size,self.size))
-        self.selectedBlock = 1
-        self.showGridLines = True
-        self.updated = False
-        self.loadMap()
-        self.loadBlocks()
-        self.mainloop()
-
-
+            #----------------- RUNTIME LOGIC STUFF -------------#
+            self.size = 40
+            self.heading = FontRenderer.CenteredText("MAP EDITOR: (LEVEL %d)"%(self.level),
+                    (self.settings.width//2 + 100,25))
+            self.running = True
+            self.scrolling = False
+            self.leftClick = False
+            self.rightClick = False
+            self.showCursor = True
+            self.cursor = pygame.image.load(r'./OtherData/cursor_normal.png').convert()
+            self.cursor.set_colorkey("#000000")
+            self.cursor = pygame.transform.scale(self.cursor,(self.size,self.size))
+            self.selectedBlock = 1
+            self.showGridLines = True
+            self.updated = False
+            self.loadMap()
+            self.loadBlocks()
+            self.mainloop()
 
     def blitAndFlip(self):
             self.display.fill("#101010")
@@ -122,9 +122,11 @@ class MapEditor:
     #====================== MAIN ========================#
     #====================================================#
     def mainloop(self):
-        while self.running:
+        while True:
             #-------------- EVENTS AND UPDATES -------------#
             self.events()
+            if not self.running:
+                break
             self.update()
             #-------------------- DRAWING ------------------#
             self.screen.fill((0,0,0))
@@ -160,7 +162,7 @@ class MapEditor:
                         self.confirm("Do you want to quit?")
                 if event.key == K_F11:
                     if self.game is not None:
-                        self.game.toggleFullscreen()
+                        pygame.display.toggle_fullscreen()
                         self.display = self.game.screen
             if event.type == KEYDOWN:
                 if event.key == K_1:
@@ -332,39 +334,56 @@ class MapEditor:
 
     #===================== OTHER SCREENS ====================#
     #========================================================#
-    def fadeIn(self):
+    def fadeIn(self,color ="#101010",screen = None):
+        if screen is None:
+            screen = self.display.copy()
         fadePad = pygame.Surface(self.displaySize)
-        fadePad.fill("#101010")
+        fadePad.fill(color)
         alpha = 40
         while True:
-            alpha += 11
+            alpha += 8
             if alpha > 255:
                 break
             fadePad.set_alpha(alpha)
-            self.display.blit(pygame.transform.scale(self.screen,self.displaySize),(0,0))
+            self.display.blit(screen,(0,0))
             self.display.blit(fadePad,(0,0))
             pygame.display.flip()
-            pygame.time.delay(2)
-        self.screen.fill("#101010")
-        self.blitAndFlip()
+            self.fpsClock.tick(fps)
+        self.display.fill(color)
+        pygame.display.flip()
         pygame.time.delay(50)
 
     def startScreen(self):
-        ques = FontRenderer.CenteredText('Map to Edit?',(500,300),textSize = 30)
-        warningNum = FontRenderer.CenteredText('*Level should be numeric',(600,500))
+        bg = pygame.transform.scale(pygame.image.load("./OtherData/map_editor.png"),self.display.get_size())
+        ques = FontRenderer.CenteredText('Map to Edit?',(500,300),textSize = 30,color='#101010')
+        warningNum = FontRenderer.CenteredText('*Level should be numeric',(700,500),color='#101010')
         IN = FontRenderer.Button('   ',(900,300))
         level = ''
-        while True:
+        running = True
+        while running:
+            self.display.blit(bg,(0,0))
+            IN.renderFonts(level)
+            IN.draw(self.display)
+            ques.draw(self.display)
+            pygame.display.update()
+            self.fpsClock.tick(fps)
+            if not level.isnumeric():
+                warningNum.draw(self.display)
+
             for event in pygame.event.get():
                 if event.type == KEYDOWN:
                     if event.key == K_BACKSPACE:
                         level = level[:-1]
                     else:
-                        if event.key != K_RETURN:
+                        if event.unicode.isnumeric():
                             level += event.unicode
                 if event.type == KEYUP:
                     if event.key == K_ESCAPE:
-                        self.fadeIn()
+                        self.fadeIn("#ffffff")
+                        running = not running
+                        break
+                    if event.key == K_F11:
+                        pygame.display.toggle_fullscreen()
                     if event.key == K_RETURN:
                         if level:
                             val = int(level)
@@ -372,49 +391,54 @@ class MapEditor:
                                 self.fadeIn()
                                 return val
                             else:
-                                self.fadeIn()
+                                self.fadeIn("#ffffff")
                                 self.sorry('Sorry, that level is not Available.')
                         else:
                             self.sorry("Don't leave it blank")
 
-            self.screen.fill("#101010")
-            IN.renderFonts(level)
-            IN.draw(self.screen)
-            ques.draw(self.screen)
-            if not level.isnumeric():
-                warningNum.draw(self.screen)
-
-            self.blitAndFlip()
 
     def sorry(self,text):
-        messege = FontRenderer.CenteredText(text,(500,300))
+        messege = FontRenderer.CenteredText(text,(640,300))
         running = True
         while running:
-            self.screen.fill('#101010')
-            messege.draw(self.screen)
+            self.display.fill('#101010')
+            messege.draw(self.display)
             for event in pygame.event.get():
                 if event.type == KEYUP:
                     if event.key == K_RETURN or event.key == K_ESCAPE:
-                        self.fadeIn()
+                        self.fadeIn("#ffffff")
                         return
-            self.blitAndFlip()
+            pygame.display.flip()
+            self.fpsClock.tick(fps)
 
 
     def confirm(self,text):
         self.fadeIn()
-        qes = FontRenderer.CenteredText(text,(500,300))
-        yes = FontRenderer.Button('yes',(660,400),color = "#185818")
-        no = FontRenderer.Button('no',(660,440),color = "#581818")
-        cancel = FontRenderer.Button('cancel',(660,480))
+        bg = pygame.transform.scale(pygame.image.load("./OtherData/map_editor.png"),self.display.get_size())
+        qes = FontRenderer.CenteredText(text,(640,300),color = "#101010",textSize=40)
+        yes = FontRenderer.RButton('yes',(640,400),color = (24,88,24))
+        no = FontRenderer.RButton('no',(640,460),color = (88,24,24))
+        cancel = FontRenderer.RButton('cancel',(640,520))
         running = True
         click = False
         while running:
+            self.display.blit(bg,(0,0))
+            qes.draw(self.display)
+            yes.draw(self.display)
+            no.draw(self.display)
+            cancel.draw(self.display)
+            self.display.blit(self.cursor,pygame.mouse.get_pos())
+            self.drawCursor()
+            pygame.display.flip()
+            self.fpsClock.tick(fps)
             for event in pygame.event.get():
                 if event.type == KEYUP:
                     if event.key == K_ESCAPE:
                         self.fadeIn()
                         self.running = True
                         running = False
+                    if event.key == K_F11:
+                        pygame.display.toggle_fullscreen()
                 if event.type == MOUSEBUTTONDOWN:
                     if event.button == 1:
                         click = True
@@ -423,22 +447,16 @@ class MapEditor:
                         click = False
             mx,my = pygame.mouse.get_pos()
             if yes.hover(mx,my) and click:
-                self.fadeIn()
+                self.fadeIn('#ffffff')
                 self.writeMap()
                 break
             if no.hover(mx,my) and click:
+                    self.fadeIn("#ffffff")
                     break
             if cancel.hover(mx,my) and click:
                     self.fadeIn()
                     self.running = True
                     break
-            self.screen.fill("#101010")
-            qes.draw(self.screen)
-            yes.draw(self.screen)
-            no.draw(self.screen)
-            cancel.draw(self.screen)
-            self.drawCursor()
-            self.blitAndFlip()
 
 if __name__ == "__main__":
     editor = MapEditor()
