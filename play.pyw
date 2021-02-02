@@ -18,8 +18,7 @@ import FontRenderer
 from network import Network
 #from gameMenu import Menu
 
-# order for the players will always remain
-# A1, G1, A2, G2, A3, G3 ...
+
 class MenuBlocks(pygame.sprite.Sprite):
     def __init__(self,img,pos,val):
         super().__init__()
@@ -51,23 +50,37 @@ class Game:
         self.homeScreen()
 
     def newGame(self):
-        self.running = self.joinGame()
-        #--------- SPRITE OVER NETWORK STUFF ------------#
-        self.playerGroup = pygame.sprite.Group()
-        self.net = Network(self.address,self.port)
-        self.peers = self.net.peers
-        self.vertex = [[(50,50),0],[(100,100),0],[(150,150),0]][:self.peers]
-        self.addAllPlayers()
-        #---------------- MAP INIT STUFF ----------------#
-        level = 1 #self.startScreen()
-        self.map = mapLoader.Map(level)
-        self.bg = pygame.image.load(r'./WorldData/Level '+str(level)+r'/bg.png')
-        #---------------- GAME RUNTIME STUFF ------------#
-        self.cam = pygame.math.Vector2(1.0,0.0)
-        self.focus = [(self.settings.width - self.player.rect.width) // 2,
-                (self.settings.height - self.player.rect.height) // 2]
-        self.mainloop()
-        self.net.client.close()
+        while True:
+            self.running = self.joinGame()
+            if not self.running:
+                break
+            #--------- SPRITE OVER NETWORK STUFF ------------#
+            self.playerGroup = pygame.sprite.Group()
+            self.screen.blit(pygame.image.load('./OtherData/joining_game.png'),(0,0))
+            pygame.display.update()
+            try:
+                self.net = Network(self.address,self.port)
+            except:
+                self.sorry(f'No game at {self.address}:{self.port} found :/')
+                break
+            self.peers = self.net.peers
+            self.vertex = [[(50,50),0],[(100,100),0],[(150,150),0]][:self.peers]
+            self.addAllPlayers()
+            #---------------- MAP INIT STUFF ----------------#
+            level = 1 #self.startScreen()
+            self.map = mapLoader.Map(level)
+            self.chunks = self.map.chunks
+            self.bg = pygame.image.load(r'./WorldData/Level '+str(level)+r'/bg.png')
+            #---------------- GAME RUNTIME STUFF ------------#
+            self.cam = pygame.math.Vector2(1.0,0.0)
+            self.LB_x = self.LB_y = 0 - data['bounds']
+            self.UB_x = data['bounds'] + data['width']//2 * (self.chunks[0] + 1)
+            self.UB_y = data['bounds'] + data['height']//2 * (self.chunks[1] + 1)
+            self.focus = [(self.settings.width - self.player.rect.width) // 2,
+                    (self.settings.height - self.player.rect.height) // 2]
+            self.mainloop()
+            self.net.client.close()
+            break
         self.homeScreen()
 
     def addAllPlayers(self):
@@ -95,10 +108,10 @@ class Game:
     def camUpdates(self):
         self.cam[0] += (self.player.rect.x - self.cam[0] - self.focus[0])/20
         self.cam[1] += (self.player.rect.y - self.cam[1] - self.focus[1])/20
-        if self.cam[0] < LB_x: self.cam[0] = LB_x
-        elif self.cam[0] > UB_x: self.cam[0] = UB_x
-        if self.cam[1] < LB_y: self.cam[1] = LB_y
-        elif self.cam[1] > UB_y: self.cam[1] = UB_y
+        if self.cam[0] < self.LB_x: self.cam[0] = self.LB_x
+        elif self.cam[0] > self.UB_x: self.cam[0] = self.UB_x
+        if self.cam[1] < self.LB_y: self.cam[1] = self.LB_y
+        elif self.cam[1] > self.UB_y: self.cam[1] = self.UB_y
         self.cam[0] = int(self.cam[0])
         self.cam[1] = int(self.cam[1])
 
@@ -110,7 +123,7 @@ class Game:
         self.player.update()
         self.updateAllPlayers()
         #---------------- MAP UPDATES ---------------#
-        if self.player.rect.y >= self.settings.height * 2:
+        if self.player.rect.y >= self.settings.height * self.chunks[1]:
             self.player.rect.topleft = random.choice([(0,0),(1000,0),(1700,0)])
             self.player.physics.vel = pygame.math.Vector2(0.0,0.0)
 
@@ -335,6 +348,8 @@ class Game:
                     if event.key == K_RETURN or event.key == K_ESCAPE:
                         self.fadeIn()
                         return
+            pygame.display.update()
+        fadeIn()
 
     def fadeIn(self):
         fadePad = pygame.Surface((self.settings.width,self.settings.height))

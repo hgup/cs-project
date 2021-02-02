@@ -85,9 +85,6 @@ class MapEditor:
         self.level = self.startScreen() #1,2,3,4...
         if self.level is not None:
             self.path = r'./WorldData/Level ' +str(self.level)+ r'/'
-            self.map = numpy.zeros((36,64))
-            self.map_coords_x = numpy.arange(64) * 40
-            self.map_coords_y = numpy.arange(36) * 40
             self.cam = pygame.math.Vector2(0,0)
             self.sprites = SpriteImages.levels[self.level]
 
@@ -111,6 +108,8 @@ class MapEditor:
             self.showGridLines = True
             self.updated = False
             self.loadMap()
+            self.map_coords_x = numpy.arange(self.dimensions[0]) * self.size
+            self.map_coords_y = numpy.arange(self.dimensions[1]) * self.size
             self.loadBlocks()
             self.mainloop()
 
@@ -196,24 +195,24 @@ class MapEditor:
             if event.type == MOUSEWHEEL:
                 if event.y < 0: # mouse down
                     mx,my = pygame.mouse.get_pos()
-                    self.map_coords_x = numpy.arange(64) * self.size
-                    self.map_coords_y = numpy.arange(36) * self.size
+                    self.map_coords_x = numpy.arange(self.dimensions[0]) * self.size
+                    self.map_coords_y = numpy.arange(self.dimensions[1]) * self.size
                     self.size -= 2
                     if self.size < 20:
                         self.size = 20
                     else:
-                        self.cam.x += 64
-                        self.cam.y += 36
+                        self.cam.x += self.dimensions[0]
+                        self.cam.y += self.dimensions[1]
                 elif event.y > 0: # mouse up
                     mx,my = pygame.mouse.get_pos()
                     self.size += 2
                     if self.size > 40:
                         self.size = 40
                     else:
-                        self.cam.x -= 64
-                        self.cam.y -= 36
-                self.map_coords_x = numpy.arange(64) * self.size
-                self.map_coords_y = numpy.arange(36) * self.size
+                        self.cam.x -= self.dimensions[0]
+                        self.cam.y -= self.dimensions[1]
+                self.map_coords_x = numpy.arange(self.dimensions[0]) * self.size
+                self.map_coords_y = numpy.arange(self.dimensions[1]) * self.size
 
     def update(self):
         if self.scrolling:
@@ -241,9 +240,9 @@ class MapEditor:
         #-------------- CREATING Block OBJECTS -------------#
         self.blocks = []
         self.blockGroup = pygame.sprite.Group()
-        for y in range(36):
+        for y in range(self.dimensions[1]):
             self.blocks.append([])
-            for x in range(64):
+            for x in range(self.dimensions[0]):
                 k = Block((x,y),self.map[y][x],self.level)
                 self.blocks[y].append(k)
                 self.blockGroup.add(k)
@@ -264,17 +263,24 @@ class MapEditor:
         # --------------- self.map IS CREATED --------------#
         try:
             with open(self.path + 'map.dat','rb+') as f:
+                self.chunks = pickle.load(f)
                 self.map = pickle.load(f)
+                self.dimensions = (32*self.chunks[0],18*self.chunks[1])
         except:
+            self.chunks = self.getDimensions()
+            self.dimensions = (32*self.chunks[0],18*self.chunks[1])
+            self.map = numpy.zeros((self.dimensions[1],self.dimensions[0]))
             try:
                 os.mkdir(self.path) # the end has a '/'
             except:
                 pass
             with open(self.path +'map.dat', 'wb+') as f:
+                pickle.dump(self.chunks,f)
                 pickle.dump(self.map,f)
 
     def writeMap(self):
         with open(self.path + 'map.dat','wb+') as f:
+            pickle.dump(self.chunks,f)
             pickle.dump(self.map,f)
         print('saved')
         self.updated = False
@@ -303,10 +309,10 @@ class MapEditor:
         self.blit_coords_x = self.map_coords_x + self.cam[0]
         self.blit_coords_y = self.map_coords_y + self.cam[1]
         c = 0
-        for y,py in zip(self.blit_coords_y,range(36)):
+        for y,py in zip(self.blit_coords_y,range(self.dimensions[1])):
             c += 1
             i = c
-            for x,px in zip(self.blit_coords_x,range(64)):
+            for x,px in zip(self.blit_coords_x,range(self.dimensions[0])):
                 i += 1
                 if i % 2:
                     pygame.draw.rect(self.canvas, '#1c1c1c',(x,y,self.size,self.size))
@@ -317,20 +323,18 @@ class MapEditor:
 
     def drawGridLines(self):
         if self.showGridLines:
-            pygame.draw.line(self.canvas, '#87afaf',
-                    (self.blit_coords_x[32],0), (self.blit_coords_x[32] ,2600))
-            pygame.draw.line(self.canvas, '#87afaf',
-                    (-40,self.blit_coords_y[18]), (2600,self.blit_coords_y[18]))
+            for x in range(1,self.dimensions[0]//32):
+                pygame.draw.line(self.canvas, '#87afaf',
+                        (self.blit_coords_x[32*x],0), (self.blit_coords_x[32*x] ,2600))
+            for y in range(1,self.dimensions[1]//16):
+                pygame.draw.line(self.canvas, '#87afaf',
+                        (-40,self.blit_coords_y[18*y]), (2600,self.blit_coords_y[18*y]))
 
     def limit(self):
         if self.cam[0] > 40:
             self.cam[0] = 40
-        if self.cam[0] < - 1320:
-            self.cam[0] = - 1320
         if self.cam[1] > 40:
             self.cam[1] = 40
-        if self.cam[1] < - 760:
-            self.cam[1] = - 760
 
     #===================== OTHER SCREENS ====================#
     #========================================================#
@@ -352,6 +356,49 @@ class MapEditor:
         self.display.fill(color)
         pygame.display.flip()
         pygame.time.delay(50)
+
+    def getDimensions(self):
+        bg = pygame.transform.scale(pygame.image.load("./OtherData/map_editor.png"),self.display.get_size())
+        ques = FontRenderer.CenteredText('No mapData found, Enter Dimensions! (1,4)',(640,300),textSize = 30,color='#101010')
+        x,y = '2','2'
+        Bx = FontRenderer.Button(' ',(600,500),color = (85,85,85))
+        By = FontRenderer.Button(' ',(700,500))
+        running = True
+        is_x = True
+        c = '2'
+        while running:
+            self.display.blit(bg,(0,0))
+            Bx.renderFonts(x)
+            By.renderFonts(y)
+            Bx.draw(self.display)
+            By.draw(self.display)
+            ques.draw(self.display)
+            pygame.display.update()
+            self.fpsClock.tick(fps)
+
+            for event in pygame.event.get():
+                if event.type == KEYDOWN:
+                    if event.unicode.isnumeric() and int(event.unicode) in range(1,5):
+                            c = event.unicode
+                if is_x:
+                    x = c
+                else:
+                    y = c
+                if event.type == KEYUP:
+                    if event.key == K_TAB:
+                        is_x = not is_x
+                        if is_x:
+                            c = x
+                            Bx.color = (85,85,85)
+                            By.color = (0,0,0)
+                        else:
+                            c = y
+                            By.color = (85,85,85)
+                            Bx.color = (0,0,0)
+                    if event.key == K_F11:
+                        pygame.display.toggle_fullscreen()
+                    if event.key == K_RETURN:
+                        return int(x),int(y)
 
     def startScreen(self):
         bg = pygame.transform.scale(pygame.image.load("./OtherData/map_editor.png"),self.display.get_size())

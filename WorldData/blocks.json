@@ -2,12 +2,12 @@
     "1":{
         "path":".//WorldData//Level 1//Sprites//World//",
         "images":[
-            "full block.png",
-            "top left.png",
-            "top right.png",
-            "bottom right.png",
-            "bottom left.png",
-            "t.png"
+            "cyan_full block.png",
+            "cyan_top left.png",
+            "cyan_top right.png",
+            "cyan_bottom right.png",
+            "cyan_bottom left.png",
+            "cyan_t.png"
         ]
 
     },
