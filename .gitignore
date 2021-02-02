@@ -5,6 +5,7 @@ __pycache__/
 
 # Boring Stuff
 *.dat
+test/
 # C extensions
 *.so
 
