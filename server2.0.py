@@ -5,8 +5,16 @@ import sys
 import pickle
 from settings import Settings
 
+inputs = sys.argv
+
 def printStart():
-    print('''
+    print(r'''
+__     _______ ____ _____ _______  __
+\ \   / / ____|  _ \_   _| ____\ \/ /
+ \ \ / /|  _| | |_) || | |  _|  \  /
+  \ V / | |___|  _ < | | | |___ /  \
+   \_/  |_____|_| \_\|_| |_____/_/\_\
+
 Server 2.0 for Vertex 2020
 -----------------------------
 Dedicated at Thy lotus feet
@@ -18,7 +26,10 @@ class Server:
     def __init__(self, peers):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server = 'localhost'
-        self.port = 9999
+        if len(inputs) == 2:
+            self.port = int(inputs[1])
+        else:
+            self.port = 9999
         self.server_ip = socket.gethostbyname(self.server)
         self.bind()
         self.peers = peers
@@ -95,7 +106,7 @@ class Server:
                     conn.send(pickle.dumps(str(myId) + ' left the game'))
     
             except Exception as err:
-                print(err,'...so sad............')
+                print(self.connections[myId][1],'left the game')
                 self.vertex[myId][1] = 1
                 running = False
                 break

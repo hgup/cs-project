@@ -17,6 +17,7 @@ class Settings:
         self.base_acc = data["base_acc"]
         self.lastAddress = data["lastAddress"]
         self.lastPort = data["lastPort"]
+        self.lastName = data["lastName"]
 
     def getDisplaySize(self):
         try:

@@ -39,6 +39,7 @@ class Game:
         self.settings = Settings()
         self.address = self.settings.lastAddress
         self.port = self.settings.lastPort
+        self.name = self.settings.lastName
         os.environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.init()
         self.displaySize = self.settings.getDisplaySize()
@@ -60,24 +61,40 @@ class Game:
             pygame.display.update()
             try:
                 self.net = Network(self.address,self.port)
+            except Exception as err:
+                self.sorry(f'An error Occured while connecting',f'Error: {err}',size=30)
+                continue
+            try:
+                self.peers = self.net.peers
             except:
-                self.sorry(f'No game at {self.address}:{self.port} found :/')
-                break
-            self.peers = self.net.peers
+                self.sorry('GAME IS FULL!','Please Wait', size = 30)
+                continue
             self.vertex = [[(50,50),0],[(100,100),0],[(150,150),0]][:self.peers]
             self.addAllPlayers()
+            self.redundantAngel = sprites.Angel(-1,(-500,-500),0)
             #---------------- MAP INIT STUFF ----------------#
             level = 1 #self.startScreen()
             self.map = mapLoader.Map(level)
             self.chunks = self.map.chunks
+            self.chunkDimension = (40*32,40*18)
+            self.dimensions = (self.chunks[0]*32,self.chunks[1]*18)
             self.bg = pygame.image.load(r'./WorldData/Level '+str(level)+r'/bg.png')
+            self.setCamFocus(self.player)
             #---------------- GAME RUNTIME STUFF ------------#
+            self.down_pressed = False
+            self.paused = False
+            self.threads = True
             self.cam = pygame.math.Vector2(1.0,0.0)
             self.LB_x = self.LB_y = 0 - data['bounds']
             self.UB_x = data['bounds'] + data['width']//2 * (self.chunks[0] + 1)
-            self.UB_y = data['bounds'] + data['height']//2 * (self.chunks[1] + 1)
+            self.UB_y = data['bounds'] + data['height']//2 * self.chunks[1] 
             self.focus = [(self.settings.width - self.player.rect.width) // 2,
                     (self.settings.height - self.player.rect.height) // 2]
+            self.downFocus = self.focus[0],self.focus[1] -200,
+            self.bottomFocus = self.focus[0],self.focus[1] + 200,
+            self.leftFocus = self.focus[0],self.focus[1],
+            self.rightFocus = self.focus[0],self.focus[1],
+            self.correction = [0,0] # bottom [0,200] top[0,-200]
             self.mainloop()
             self.net.client.close()
             break
@@ -92,26 +109,51 @@ class Game:
                 self.player = a
 
     def mainloop(self):
-        while self.running:
+        # threaded processes
+        while True:
             # handle, update and draw
             events = pygame.event.get()
             pressed = self.handleGameEvents(events)
             if pressed == K_ESCAPE:
-                self.running = False
-            Game.handlePlayerEvents(self.player,events)
+                self.paused = True
+                self.pause(events)
+                self.paused = False
+                self.setCamFocus(self.player)
+            if not self.running:
+                break
+            self.handlePlayerEvents(self.player,events)
             self.update()
             self.draw()
             # flip and tick
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
+        self.threads = False
+
+
+    def setCamFocus(self,entity,axes='both'):
+        if axes == 'both':
+            self.focusedPlayerX = self.focusedPlayerY = entity
+        elif axes == 'x' or axes == 'X':
+            self.focusedPlayerX = entity
+        elif axes == 'y' or axes == 'Y':
+            self.focusedPlayerY = entity
 
     def camUpdates(self):
-        self.cam[0] += (self.player.rect.x - self.cam[0] - self.focus[0])/20
-        self.cam[1] += (self.player.rect.y - self.cam[1] - self.focus[1])/20
-        if self.cam[0] < self.LB_x: self.cam[0] = self.LB_x
-        elif self.cam[0] > self.UB_x: self.cam[0] = self.UB_x
-        if self.cam[1] < self.LB_y: self.cam[1] = self.LB_y
-        elif self.cam[1] > self.UB_y: self.cam[1] = self.UB_y
+        self.correction = [0,0]
+        if not self.paused:
+            if (self.player.rect.x // 40) < 8:
+                self.correction[0] = 330
+            elif (self.player.rect.x // 40) > self.chunks[0]*32 - 8:
+                self.correction[0] = -300
+            if (self.player.rect.y // 40) > self.chunks[1]*18 - 12:
+                self.correction[1] = -100
+        if self.down_pressed:
+            dy = (self.focusedPlayerY.rect.y - self.cam[1] - self.downFocus[1] + self.correction[1])
+        else:
+            dy = (self.focusedPlayerY.rect.y - self.cam[1] - self.focus[1] + self.correction[1])
+        dx = (self.focusedPlayerX.rect.x - self.cam[0] - self.focus[0] + self.correction[0])
+        self.cam[0] += dx/20
+        self.cam[1] += dy/20
         self.cam[0] = int(self.cam[0])
         self.cam[1] = int(self.cam[1])
 
@@ -159,13 +201,58 @@ class Game:
         # draw players
         self.drawAllPlayers()
         #self.screen.blit(self.player.image,self.player.rect)
+    
+    def pause(self,events):
+        self.setCamFocus(self.redundantAngel)
+        resume = pygame.image.load('./OtherData/resume.png').convert()
+        resume.set_colorkey((0,0,0))
+        exit = pygame.image.load('./OtherData/exit.png').convert()
+        exit.set_colorkey((0,0,0))
+        button_selected = pygame.image.load('./OtherData/select.png').convert()
+        button_selected.set_colorkey((0,0,0))
+        resumeCoords = FontRenderer.centerCoords(resume,(340,380))
+        exitCoords = FontRenderer.centerCoords(exit,(340,520))
+        bg = pygame.Surface((self.settings.width,self.settings.height)).convert()
+        bg.fill((30,30,30))
+        bg.set_alpha(150)
+        self.player.physics.acc = pygame.math.Vector2(0,0)
+        selected = 0
+        options = 2
+        paused = True
+        while paused:
+            events = pygame.event.get()
+            pressed = self.handleGameEvents(events)
+            if pressed == K_ESCAPE:
+                break
+            for event in events:
+                if event.type == KEYDOWN:
+                    if event.key == K_DOWN:
+                        if selected != options -1:
+                            selected += 1
+                    elif event.key == K_UP:
+                        if selected != 0:
+                            selected -= 1
+                elif event.type == KEYUP:
+                    if event.key == K_RETURN:
+                        if selected == 0:
+                            paused = False
+                        if selected == 1:
+                            self.running = False
+                            paused = False
 
-    def pause(self):
-        self.running = False
-        try:
-            self.net.client.close()
-        except:
-            pass
+            self.update()
+            self.draw()
+            self.screen.blit(bg,(0,0))
+            self.screen.blit(resume,resumeCoords)
+            self.screen.blit(exit,exitCoords)
+            if selected == 0:
+                self.screen.blit(button_selected,resumeCoords)
+            elif selected == 1:
+                self.screen.blit(button_selected,exitCoords)
+
+            # flip and tick
+            pygame.display.update()
+            self.fpsClock.tick(self.settings.fps)
 
     def handleGameEvents(self,events):
         for event in events:
@@ -179,17 +266,20 @@ class Game:
                 if event.key == K_RETURN: return K_RETURN
                 if event.key == K_ESCAPE: return K_ESCAPE
 
-    def handlePlayerEvents(player,events):
+    def handlePlayerEvents(self,player,events):
         for event in events:
             if event.type == KEYDOWN:
                     player.start_move(event)
-                    if event.key == K_DOWN: player.dash()
+                    if event.key == K_DOWN:
+                        self.down_pressed = True
+                        player.dash()
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
                         player.jumping = True
             if event.type == KEYUP:
                     player.stop_move(event)
                     if event.key == K_SPACE or event.key == K_UP or event.key == K_w:
                         player.jumping = False
+                    if event.key == K_DOWN: self.down_pressed = False
                     if event.key == K_RETURN: return K_RETURN
 
     def collisionDetect(self,entity,group):
@@ -256,7 +346,7 @@ class Game:
             events = pygame.event.get()
             s = self.move(self.homeGroup)
             if not doneSelected:
-                Game.handlePlayerEvents(self.player,events)
+                self.handlePlayerEvents(self.player,events)
                 if self.player.rect.y  > 800: self.player.rect.topleft = (633,100)
             else:
                 if done:
@@ -291,14 +381,17 @@ class Game:
             joinGroup.add(x)
             joinSprites.append(x)
 
-        ADD = FontRenderer.Button(self.address,(703,264),color=None,key = '#38b6ff',textSize = 30)
-        PORT = FontRenderer.Button(self.port,(1030,264),color=None,key = '#38b6ff',textSize = 30)
+        ADD = FontRenderer.Button('               ',(703,264),color=None,key = '#38b6ff',textSize = 30)
+        PORT = FontRenderer.Button('               ',(1030,264),color=None,key = '#38b6ff',textSize = 30)
+        NAME = FontRenderer.Button('               ',(873,424), color=None, key = '#38b6ff',textSize = 30)
         bg_image = pygame.image.load(r'./OtherData/Join_Screen.png').convert()
         ADDselected = pygame.Surface((5,80)) #483,224
         ADDselected.fill('#ffffff')
         PORTselected = pygame.Surface((5,60)) #938,234
         PORTselected.fill('#ffffff')
-        add = True
+        NAMEselected = pygame.Surface((5,65)) #704,388
+        NAMEselected.fill('#ffffff')
+        add = 1
 
         while True:
             if self.player.rect.y  > 800: self.player.rect.topleft = (80,-10)
@@ -307,49 +400,59 @@ class Game:
             for event in events:
                 if event.type == KEYDOWN:
                     if event.key == K_BACKSPACE:
-                        if add: self.address = self.address[:-1]
-                        else: self.port = self.port[:-1]
+                        if add == 0: self.address = self.address[:-1]
+                        elif add == 1: self.port = self.port[:-1]
+                        else: self.name = self.name[:-1]
                     else:
                         if event.key != K_RETURN and event.key != K_ESCAPE and event.key != K_TAB:
-                            if add: self.address += event.unicode
-                            else: self.port += event.unicode
+                            if add == 0: self.address += event.unicode
+                            elif add == 1: self.port += event.unicode
+                            else: self.name += event.unicode
                     if event.key == K_TAB:
-                        add = not add
+                        add = (add + 1) % 3
                 if event.type == KEYUP:
                     if event.key == K_RETURN:
                         return True
-            Game.handlePlayerEvents(self.player,events)
+            self.handlePlayerEvents(self.player,events)
             pressed = self.handleGameEvents(events)
             if pressed == K_ESCAPE:
                 return False
             self.player.update()
             self.screen.blit(bg_image,(0,0))
-            if add:
+            if add == 0:
                 self.screen.blit(ADDselected,(483,224))
-            else:
+            elif add == 1:
                 self.screen.blit(PORTselected,(938,234))
+            elif add == 2:
+                self.screen.blit(NAMEselected,(701,388))
             ADD.renderFonts(self.address)
             ADD.draw(self.screen)
             PORT.renderFonts(self.port)
             PORT.draw(self.screen)
+            NAME.renderFonts(self.name)
+            NAME.draw(self.screen)
             joinGroup.draw(self.screen)
             self.screen.blit(self.player.image,self.player.rect.topleft)
             self.fpsClock.tick(self.settings.fps)
             pygame.display.flip()
 
-    def sorry(self,text):
-        messege = FontRenderer.CenteredText(text,(500,300))
+    def sorry(self,text,text2 = '',size= 25):
+        self.screen.fill('#101010')
+        messege = FontRenderer.CenteredText(text,(640,300), textSize = size)
+        if len(text2) > 40:
+            FontRenderer.CenteredText(' '.join(text2.split()[:6]),(640,400), textSize = 20).draw(self.screen)
+            FontRenderer.CenteredText(' '.join(text2.split()[6:]),(640,450), textSize = 20).draw(self.screen)
+        else:
+            FontRenderer.CenteredText(text2,(640,400), textSize = 15).draw(self.screen)
         running = True
+        messege.draw(self.screen)
+        pygame.display.update()
         while running:
-            self.screen.fill('#101010')
-            messege.draw(self.screen)
             for event in pygame.event.get():
                 if event.type == KEYUP:
                     if event.key == K_RETURN or event.key == K_ESCAPE:
                         self.fadeIn()
                         return
-            pygame.display.update()
-        fadeIn()
 
     def fadeIn(self):
         fadePad = pygame.Surface((self.settings.width,self.settings.height))

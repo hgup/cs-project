@@ -2,6 +2,7 @@ import numpy
 import pygame
 import pickle
 import SpriteImages
+import FontRenderer
 SpriteImages = SpriteImages.SpriteImages()
 
 class Block(pygame.sprite.Sprite):
@@ -30,12 +31,12 @@ class Map:
         self.spriteImages = SpriteImages.levels[level]
         self.loadMap()
         self.dimensions = (self.chunks[0]*32,self.chunks[1]*18)
-        print(self.chunks,self.dimensions)
         self.map_coords_x = numpy.arange(self.dimensions[0]) * 40
         self.map_coords_y = numpy.arange(self.dimensions[1]) * 40
         self.blit_coords_x = numpy.arange(self.dimensions[0]) * 40
         self.blit_coords_y = numpy.arange(self.dimensions[1]) * 40
         self.sprites = []
+        self.paused_text = FontRenderer.CenteredText('Game is Paused!',(-250,-300),textSize=30)
         self.loadSprites()
 
     def loadMap(self):
@@ -43,7 +44,6 @@ class Map:
         with open(self.path +'map.dat', 'rb') as f:
             self.chunks = pickle.load(f)
             self.data = pickle.load(f)
-            print(self.chunks)
 
     def loadSprites(self):
         # if self.sprites not defined that means map not loaded
@@ -58,6 +58,7 @@ class Map:
 
     def draw(self, screen,cam):
         # be sure to update before calling
+        screen.blit(self.paused_text.txt,(-500 - cam[0], -500 - cam[1]))
         for y in range(self.dimensions[1]):
             for x in range(self.dimensions[0]):
                 screen.blit(self.sprites[y][x].image,

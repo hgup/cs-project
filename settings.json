@@ -16,5 +16,6 @@
     "gravity" : 0.5,
     "bounds": 70,
     "lastAddress":"localhost",
-    "lastPort":"9999"
+    "lastPort":"9999",
+    "lastName":"Hursh"
 }

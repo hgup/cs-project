@@ -70,3 +70,8 @@ class RButton(Button):
     def renderFonts(self,text):
         self.font = CenteredText(text,(self.size[0]//2, self.size[1]//2 -2),textSize = self.textSize)
         self.font.draw(self.surf)
+
+def centerCoords(surface,coords =(0,0)):
+    rect = surface.get_rect()
+    rect.center = coords
+    return rect.topleft
