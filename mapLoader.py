@@ -24,10 +24,11 @@ class Block(pygame.sprite.Sprite):
 class Map:
     # self.data contains the value of that block coord
     
-    def __init__(self, level):
+    def __init__(self,level):
         self.bg = None
         self.level = level
-        self.path = r'./WorldData/Level ' + str(level) +'/' 
+        #self.path = r'./WorldData/Level ' + str(level) +'/' 
+        self.path = r'MultiplayerData/'
         self.spriteImages = SpriteImages.levels[level]
         self.loadMap()
         self.dimensions = (self.chunks[0]*32,self.chunks[1]*18)
@@ -39,7 +40,7 @@ class Map:
         self.paused_text = FontRenderer.CenteredText('Game is Paused!',(-250,-300),textSize=30)
         self.loadSprites()
 
-    def loadMap(self):
+    def loadMap(self,fH = None):
         self.bg = pygame.image.load(self.path+'bg.png')
         with open(self.path +'map.dat', 'rb') as f:
             self.chunks = pickle.load(f)

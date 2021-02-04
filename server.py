@@ -4,6 +4,7 @@ import _thread
 import sys
 import pickle
 from settings import Settings
+import mapLoader
 
 inputs = sys.argv
 
@@ -23,13 +24,15 @@ Don't play during study hours
     ''')
 class Server:
 
-    def __init__(self, peers):
+    def __init__(self, peers, port = None, level = 1):
+        self.running = True
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server = 'localhost'
+        self.mapPath = r'./WorldData/Level ' + str(level) +'/' 
+        self.level = level
+        self.port = 9999 if port is not None else port
         if len(inputs) == 2:
             self.port = int(inputs[1])
-        else:
-            self.port = 9999
         self.server_ip = socket.gethostbyname(self.server)
         self.bind()
         self.peers = peers
@@ -81,7 +84,10 @@ class Server:
         if myId is not None:
             x,y = self.vertex[myId][0] # init Rect
             # available myId is actually the game.net.id
-            conn.send(str.encode(str([myId,x,y,self.peers]))) 
+            conn.send(pickle.dumps([myId,x,y,self.peers]))
+            print(conn.recv(32).decode())
+            self.sendFile(self.mapPath + 'map.dat', conn)
+            self.sendFile(self.mapPath + 'bg.png', conn)
             self.mainloop(conn, myId)
             # now conn is useless
             self.setAvailableId(myId)
@@ -91,6 +97,10 @@ class Server:
         else:
             conn.send(str.encode(str('Game is Full')))
         self.showAvailableId()
+
+    def gameloop(self):
+        while self.running:
+            pass
 
     def mainloop(self, conn, myId):
         running = True
@@ -115,12 +125,21 @@ class Server:
         self.connections = []
         c = 0
         print(f'[SERVER] OPEN AT PORT {self.port}')
-        while True:
+        while self.running:
                 c += 1
                 print(f'[{c}] Waiting')
                 conn,addr = self.socket.accept()
                 self.connections.append((conn,addr))
-                _thread.start_new_thread(self.threadedClient,(conn,))
+                a = _thread.start_new_thread(self.threadedClient,(conn,))
+        self.mapFile.close()
+        self.mapBg.close()
+
+    def sendFile(self,fileName,sock):
+        with open(fileName,'rb') as f:
+            d = f.read()
+            sock.sendall(d)
+        if sock.recv(32).decode() == 'Received:123':
+            print(f'Received {fileName}')
 
 if __name__ == "__main__":
     printStart()
@@ -134,7 +153,7 @@ SERVER STARTED!
         except:
             print('By how many Peers I meant, specify a number...')
             continue
-        Server(n)
+        Server(n,8888,1)
         run = True if input("restart server? (y/n) : ") == 'y' else False
 
 # received = [id, vec]

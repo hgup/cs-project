@@ -29,11 +29,12 @@ class Angel(pygame.sprite.Sprite):
         self.id = _id
         # surface and rect
         self.image = pygame.Surface((200,200))
-        pygame.draw.circle(self.image,color,(100,100),99)
         self.image = pygame.transform.scale(self.image,(30,30))
+        self.color = color
         self.image.fill(self.settings.colors[color])
         self.rect = self.image.get_rect()
         self.rect.x,self.rect.y = pos
+        self.makeDevil()
         self.image.set_colorkey('#000000')
         # movement
         self.controls = controls[0]
@@ -48,6 +49,13 @@ class Angel(pygame.sprite.Sprite):
         self.stamina = 10.0
         self.capJump = 12
 
+    def makeDevil(self):
+        self.image.fill(self.settings.colors[self.color])
+        pygame.draw.circle(self.image,'#000000',(15,15),9)
+        pygame.draw.circle(self.image,self.settings.colors[self.color],(15,15),5)
+
+    def makeAngel(self):
+        self.image.fill(self.settings.colors[self.color])
 
     def move_x(self):
         # apply physics to player.physics.rect

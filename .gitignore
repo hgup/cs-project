@@ -6,6 +6,7 @@ __pycache__/
 # Boring Stuff
 *.dat
 test/
+MultiplayerData/
 # C extensions
 *.so
 
