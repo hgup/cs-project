@@ -27,6 +27,29 @@ class Settings:
         except:
             return (1280,720)
 
+    def update(self):
+        dataR = {}
+        dataR["width"] = self.width
+        dataR["height"] = self.height
+        dataR["fps"] = self.fps
+        dataR["playerWidth"] = self.playerWidth
+        dataR["playerHeight"] = self.playerHeight
+        dataR["gravity"] = self.gravity
+        dataR["block_size"] = self.block_size
+        dataR["colors"] = self.colors
+        dataR["base_acc"] = self.base_acc
+        dataR["lastAddress"] = self.lastAddress
+        dataR["lastPort"] = self.lastPort
+        dataR["lastName"] = self.lastName
+        dataR["bounds"] = data['bounds']
+        with open('settings.json','w') as f:
+            json.dump(dataR,f)
+
 LB_x = LB_y = 0 - data['bounds']
 UB_x = data['bounds'] + data['width']
 UB_y = data['bounds'] + data['height']
+
+if __name__ == '__main__':
+    s = Settings()
+    s.lastPort = 1234
+    s.update()

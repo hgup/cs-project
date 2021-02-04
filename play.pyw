@@ -38,9 +38,6 @@ class Game:
     def __init__(self):
         #---------------- PYGAME STUFF ------------------#
         self.settings = Settings()
-        self.address = self.settings.lastAddress
-        self.port = self.settings.lastPort
-        self.name = self.settings.lastName
         os.environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.init()
         self.displaySize = self.settings.getDisplaySize()
@@ -58,8 +55,10 @@ class Game:
                 if self.hostGame(): # sets self.address and self.port
                     self.peers = int(self.peers)
                     self.level = int(self.level)
-                    self.port = int(self.port)
+                    self.settings.lastPort = self.port = int(self.port)
                     self.address = 'localhost'
+                    self.settings.lastName = self.name
+                    self.settings.update()
                     self.myServer = server.Server(self.peers,self.port,self.level)
                     self.running = True
                 else:
@@ -69,22 +68,23 @@ class Game:
             #--------- SPRITE OVER NETWORK STUFF ------------#
             if not self.running:
                 break
+            self.settings.lastPort = self.port = int(self.port)
+            self.settings.lastAddress = self.address
+            self.settings.lastName = self.name
+            self.settings.update()
             self.playerGroup = pygame.sprite.Group()
             self.screen.blit(pygame.image.load('./OtherData/joining_game.png'),(0,0))
             pygame.display.update()
-            self.net = Network(self.address,self.port)
+            self.net = Network(self,self.address,self.port,self.name)
             try:
-                pass
+                self.peers = self.net.peers
             except Exception as err:
-                print('self.net error')
-                self.sorry(f'An error Occured while connecting',f'Error: {err}',size=30)
+                print(err)
                 continue
-            self.peers = self.net.peers
-            #try:
-            #except:
-            #    self.sorry('GAME IS FULL!','Please Wait', size = 30)
-            #    continue
-            self.vertex = [[(50,50),0],[(100,100),0],[(150,150),0]][:self.peers]
+            self.vertex = [[(50,50),0,'P1'],[(250,100),0,'P2'],[(450,150),0,'P3']][:self.peers]
+            self.index = { 'pos' : 0, 'draw' : 1, 'name' : 2}
+            self.nameSurfs = []
+            self.playerNames = ['P1','P2','P3'][:self.peers]
             self.addAllPlayers()
             self.redundantAngel = sprites.Angel(-1,(-500,-500),0)
             #---------------- MAP INIT STUFF ----------------#
@@ -99,6 +99,7 @@ class Game:
             self.paused = False
             self.threads = True
             self.cam = pygame.math.Vector2(1.0,0.0)
+            self.otherCam = pygame.math.Vector2(1.0,0.0)
             self.LB_x = self.LB_y = 0 - data['bounds']
             self.UB_x = data['bounds'] + data['width']//2 * (self.chunks[0] + 1)
             self.UB_y = data['bounds'] + data['height']//2 * self.chunks[1] 
@@ -116,13 +117,13 @@ class Game:
 
     def addAllPlayers(self):
         # initialize all locations
-        font = pygame.font.Font('./FontData/8-bit-pusab.ttf',12)
+        self.font = pygame.font.Font('./FontData/8-bit-pusab.ttf',12)
         for _id in range(self.peers):
             a = sprites.Angel(_id,self.net.initRect,_id)
             self.playerGroup.add(a)
+            self.nameSurfs.append([self.font.render(self.vertex[_id][2],True,'#f0f0f0'),5])
             if self.net.id == _id: # link this game session and player
                 self.player = a
-        self.nameSurf = font.render(self.name,True,'#f0f0f0')
 
     def mainloop(self):
         # threaded processes
@@ -169,7 +170,9 @@ class Game:
             dy = (self.focusedPlayerY.rect.y - self.cam[1] - self.focus[1] + self.correction[1])
         dx = (self.focusedPlayerX.rect.x - self.cam[0] - self.focus[0] + self.correction[0])
         self.cam[0] += dx/20
+        self.otherCam[0] = dx/22
         self.cam[1] += dy/20
+        self.otherCam[1] = dx/22
         self.cam[0] = int(self.cam[0])
         self.cam[1] = int(self.cam[1])
 
@@ -189,11 +192,16 @@ class Game:
         # this is just to test
         try:
             self.vertex = pickle.loads(self.net.send(
-                pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y)])
+                pickle.dumps([self.net.id,(self.player.rect.x,self.player.rect.y),self.paused])
                 ))
-        except:
+        except Exception as e:
+            print(e)
             self.net.client.close()
             self.running = False
+        for i,p in enumerate(self.vertex):
+            if p[self.index['name']] != self.playerNames[i]:
+                self.nameSurfs[i][0] = self.font.render(p[self.index['name']],True,'#f0f0f0')
+                self.nameSurfs[i][1] = self.nameSurfs[i][0].get_rect().width//2
         for player,vert in zip(self.playerGroup.sprites(),self.vertex):
             player.rect.x, player.rect.y = vert[0]
 
@@ -208,8 +216,9 @@ class Game:
             if self.vertex[player.id][1]:
                 self.screen.blit(player.image,
                         (player.rect.x - self.cam[0], player.rect.y - self.cam[1]))
-        self.screen.blit(self.nameSurf,
-                (player.rect.x - self.cam[0] - len(self.name)*4, player.rect.y - self.cam[1] - 25))
+                self.screen.blit(self.nameSurfs[player.id][0],
+                        (player.rect.x + player.rect.width//2 - self.cam[0] - self.nameSurfs[player.id][1], player.rect.y - self.cam[1] - 25))
+                
 
 
     def draw(self):
@@ -459,6 +468,9 @@ class Game:
     def hostGame(self):
         self.peers = '1'
         self.level = '1'
+        self.address = str(self.settings.lastAddress)
+        self.port = str(self.settings.lastPort)
+        self.name = str(self.settings.lastName)
         selected = 9
         joinSprites = []
         joinGroup = pygame.sprite.Group()
@@ -542,6 +554,9 @@ class Game:
 
     def joinGame(self):
 
+        self.address = str(self.settings.lastAddress)
+        self.port = str(self.settings.lastPort)
+        self.name = str(self.settings.lastName)
         selected = 9
         joinSprites = []
         joinGroup = pygame.sprite.Group()
