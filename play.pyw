@@ -43,38 +43,39 @@ class Game:
         self.displaySize = self.settings.getDisplaySize()
         initDisplay()
         #self.screen = pygame.Surface((self.settings.width,self.settings.height))
+        self.font = pygame.font.Font('./FontData/8-bit-pusab.ttf',12)
         self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))
         self.fullscreen = False
         self.fpsClock = pygame.time.Clock()
         self.homeScreen()
 
     def newGame(self):
-        self.running = False
         while True:
+            #-------------------------- MENU ------------------------#
             if self.hosting:
-                if self.hostGame(): # sets self.address and self.port
-                    self.peers = int(self.peers)
-                    self.level = int(self.level)
-                    self.settings.lastPort = self.port = int(self.port)
-                    self.address = 'localhost'
-                    self.settings.lastName = self.name
-                    self.settings.update()
-                    self.myServer = server.Server(self.peers,self.port,self.level)
-                    self.running = True
-                else:
-                    break
+                self.running = self.hostGame() # sets self.address and self.port
             else:
                 self.running = self.joinGame()
-            #--------- SPRITE OVER NETWORK STUFF ------------#
-            if not self.running:
+            #------------------------ EXECUTION ---------------------#
+            if self.running:
+                if self.hosting:
+                    self.peers = int(self.peers)
+                    self.level = int(self.level)
+                    self.address = 'localhost'
+                    self.myServer = server.Server(self.peers,self.port,self.level)
+                    self.myServer.start()
+            else:
+                self.hosting = False
                 break
             self.settings.lastPort = self.port = int(self.port)
             self.settings.lastAddress = self.address
             self.settings.lastName = self.name
             self.settings.update()
+            #--------- LOADING STUFF ------------------------#
             self.playerGroup = pygame.sprite.Group()
             self.screen.blit(pygame.image.load('./OtherData/joining_game.png'),(0,0))
             pygame.display.update()
+            #--------- SPRITE OVER NETWORK STUFF ------------#
             self.net = Network(self,self.address,self.port,self.name)
             try:
                 self.peers = self.net.peers
@@ -82,7 +83,7 @@ class Game:
                 print(err)
                 continue
             self.vertex = [[(50,50),0,'P1'],[(250,100),0,'P2'],[(450,150),0,'P3']][:self.peers]
-            self.index = { 'pos' : 0, 'draw' : 1, 'name' : 2}
+            self.index = { 'pos' : 0, 'draw' : 1, 'name' : 2,'role' : 3}
             self.nameSurfs = []
             self.playerNames = ['P1','P2','P3'][:self.peers]
             self.addAllPlayers()
@@ -114,16 +115,24 @@ class Game:
             self.net.client.close()
             self.player.kill()
             break
+        if self.hosting:
+            self.myServer.quit()
+            self.hosting = False
 
     def addAllPlayers(self):
         # initialize all locations
-        self.font = pygame.font.Font('./FontData/8-bit-pusab.ttf',12)
         for _id in range(self.peers):
             a = sprites.Angel(_id,self.net.initRect,_id)
             self.playerGroup.add(a)
             self.nameSurfs.append([self.font.render(self.vertex[_id][2],True,'#f0f0f0'),5])
             if self.net.id == _id: # link this game session and player
                 self.player = a
+
+    def loading(self,text):
+            item = FontRenderer.CenteredText(text,(640,550), textSize = 25,color = '#303030')
+            self.screen.blit(pygame.image.load('./OtherData/joining_game.png'),(0,0))
+            item.draw(self.screen)
+            pygame.display.update()
 
     def mainloop(self):
         # threaded processes
@@ -473,9 +482,10 @@ class Game:
         self.name = str(self.settings.lastName)
         selected = 9
         joinSprites = []
+        numlist = [str(i) for i in range(1,10)]
         joinGroup = pygame.sprite.Group()
-        self.player.rect.topleft = (80,-10)
-        for i in [('desk.png',(77,600),1)]:#,('join.png',(700,500),2)]:
+        self.player.rect.topleft = (950,-10)
+        for i in [('desk.png',(932,346),1)]:#,('join.png',(700,500),2)]:
             x = MenuBlocks(i[0],i[1],i[2])
             joinGroup.add(x)
             joinSprites.append(x)
@@ -496,35 +506,30 @@ class Game:
         add = 1
 
         while True:
-            if self.player.rect.y  > 800: self.player.rect.topleft = (80,-10)
+            if self.player.rect.y  > 800: self.player.rect.topleft = (950,-10)
             events = pygame.event.get()
             s = self.move(joinGroup)
             for event in events:
                 if event.type == KEYDOWN:
                     if event.key == K_BACKSPACE:
-                        if add == 0: self.name = self.address[:-1]
-                        elif add == 1: self.peers = self.peers[:-1]
+                        if add == 0: self.name = self.name[:-1]
+                        elif add == 1: self.peers = '1'
                         elif add == 2: self.level = self.level[:-1]
-                        else: self.port = self.port[:-1]
+                        else: self.port = self.port[:-1] if len(self.port) > 1 else self.port
                     else:
                         if event.key != K_RETURN and event.key != K_ESCAPE and event.key != K_TAB:
                             if add == 0: self.name += event.unicode
-                            elif add == 1: self.peers += event.unicode
-                            elif add == 2: self.level += event.unicode
-                            else: self.port += event.unicode
-
-                    if event.key == K_LSHIFT and event.key == K_TAB:
-                        add -= 1
-                        if add == -1: add = 3
-                    elif event.key == K_TAB:
-                        add = (add + 1) % 4
+                            elif add == 1: self.peers = event.unicode if event.unicode in numlist else self.peers
+                            elif add == 2: self.level += event.unicode if event.unicode in numlist else ''
+                            else: self.port += event.unicode if event.unicode in numlist else ''
+                    if event.key == K_TAB:
+                            add = (add + 1) % 4
                 if event.type == KEYUP:
                     if event.key == K_RETURN:
                         return True
             self.handlePlayerEvents(self.player,events)
             pressed = self.handleGameEvents(events)
             if pressed == K_ESCAPE:
-                self.running = False
                 return False
             self.player.update()
             self.screen.blit(bg_image,(0,0))

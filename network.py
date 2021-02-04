@@ -2,11 +2,16 @@ import sys
 import socket
 import pickle
 import mapLoader
+import pygame
+import random
+
+loadingMessage = ['Baking the cookies','Making the track ready','Praying To Swami']
 
 class Network:
 
     def __init__(self,game, address,port,name):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #-------------------- GAME STUFF -------------------#
         self.game = game
         self.host = address
         self.port = int(port)
@@ -14,14 +19,20 @@ class Network:
         self.name = name
         reply = self.connect()
         if reply is not None:
-            self.id,x,y,self.peers = reply
+            self.id,x,y,self.peers,level = reply
             self.initRect = (x,y)
-            self.client.send('Received loginData'.encode())
+            self.game.loading('Sending loginData')
+            self.client.send('Sent loginData'.encode())
             # get map data
+            load = loadingMessage.copy()
+            a = random.choice(loadingMessage)
+            load.remove(a)
+            self.game.loading(a)
             self.getFile("MultiplayerData/map.dat")
             # get map bg
+            self.game.loading(random.choice(load))
             self.getFile("MultiplayerData/bg.png")
-            self.map = mapLoader.Map(1)
+            self.map = mapLoader.Map(level)
 
     def getFile(self,fileName):
         d = self.client.recv(2048)

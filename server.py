@@ -1,6 +1,7 @@
 #=================== MODULES ====================#
 import socket
 import _thread
+from threading import Thread
 import sys
 import pickle
 from settings import Settings
@@ -23,28 +24,32 @@ Dedicated at Thy lotus feet
 Don't play during study hours
 -----------------------------
     ''')
-class Server:
+class Server(Thread):
 
     def __init__(self, peers, port = None, level = 1):
-        self.running = True
+        super().__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server = 'localhost'
-        self.mapPath = r'./WorldData/Level ' + str(level) +'/' 
-        self.level = level
         self.port = 9999 if port is not None else port
+        self.level = level
+        self.peers = peers
+
+    def run(self):
+        self.running = True
+        self.mapPath = r'./WorldData/Level ' + str(self.level) +'/' 
         if len(inputs) == 2:
             self.port = int(inputs[1])
         self.server_ip = socket.gethostbyname(self.server)
         self.bind()
-        self.peers = peers
         self.socket.listen(self.peers)
         self.settings = Settings()
         self.vertex = []
-        self.index = { 'pos' : 0, 'draw' : 1, 'name' : 2}
+        self.index = { 'pos' : 0, 'draw' : 1, 'name' : 2,'role' : 3}
         self.available = [i for i in range(self.peers)]
         self.connected = []
         self.initVertex()
-        _thread.start_new_thread(self.sleepingAnimation,())
+        _thread.start_new_thread(self.control,())
         self.acceptRequest()
 
     def bind(self):
@@ -79,7 +84,13 @@ class Server:
         self.vertex = [
                 [(50,50),0,'p1'],
                 [(250,100),0,'p2'],
-                [(450,150),0,'p3']
+                [(450,150),0,'p3'],
+                [(150,100),0,'p4'],
+                [(550,150),0,'p5'],
+                [(75,100),0,'p6'],
+                [(650,150),0,'p7'],
+                [(150,100),0,'p8'],
+                [(90,150),0,'p9'],
                 ][:self.peers]
 
     def threadedClient(self,conn,initData):
@@ -87,7 +98,7 @@ class Server:
         if myId is not None:
             x,y = self.vertex[myId][0] # init Rect
             # available myId is actually the game.net.id
-            conn.send(pickle.dumps([myId,x,y,self.peers]))
+            conn.send(pickle.dumps([myId,x,y,self.peers,self.level]))
             print(conn.recv(32).decode())
             self.sendFile(self.mapPath + 'map.dat', conn)
             self.sendFile(self.mapPath + 'bg.png', conn)
@@ -96,30 +107,39 @@ class Server:
             # now conn is useless
             self.setAvailableId(myId)
             print(f"id {myId} will now be available")
-            conn.shutdown(socket.SHUT_RDWR)
+            #conn.shutdown(socket.SHUT_RDWR)
             conn.close()
         else:
             conn.send(str.encode(str('Game is Full')))
         self.showAvailableId()
+        print(f'[{myId}]',':thread ended')
 
     def gameloop(self):
         while self.running:
             pass
 
-    def sleepingAnimation(self):
+    def control(self):
         self.zzz = ''
         while self.running:
             self.zzz += 'z'
             if len(self.zzz) > 3:
                 self.zzz = 'z'
             time.sleep(0.4)
-
+        else:
+            print('Shutting Down Server!')
+            self.socket.close()
+            try:
+                dummySock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                dummySock.connect((self.server_ip,self.port))
+                dummySock.close()
+            except Exception as err:
+                print('[130]',err)
 
     def mainloop(self, conn, myId,initData):
         running = True
         self.vertex[myId][1] = 1
         lastData = initData # [ name , paused ]
-        while running:
+        while self.running:
             try:
                 data = conn.recv(2048)
                 received = pickle.loads(data) # [ id, rect, paused ]
@@ -136,10 +156,10 @@ class Server:
                     conn.send(pickle.dumps(str(myId) + ' left the game'))
     
             except Exception as err:
-                print(self.connections[myId][1],'left the game')
-                self.vertex[myId][1] = 1
-                running = False
                 break
+        print(self.connections[myId][1],'left the game')
+        #self.connections.remove(myId)
+        self.vertex[myId][1] = 1
 
     def acceptRequest(self):
         self.connections = []
@@ -147,13 +167,29 @@ class Server:
         print(f'[SERVER] OPEN AT PORT {self.port}')
         while self.running:
                 c += 1
+                print('---------------')
                 print(f'[{c}] Waiting')
-                conn,addr = self.socket.accept()
-                initData = pickle.loads(conn.recv(32)) # [ name, paused ]
+                try:
+                    conn,addr = self.socket.accept()
+                    initData = pickle.loads(conn.recv(32)) # [ name, paused ]
+                except:
+                    break
                 self.connections.append((conn,addr))
                 a = _thread.start_new_thread(self.threadedClient,(conn,initData))
-        self.mapFile.close()
-        self.mapBg.close()
+
+    def quit(self):
+        self.running = False
+        self.closeAllConn()
+
+    def closeAllConn(self):
+        for conn in self.connections:
+            try:
+                conn[0].shutdown(socket.SHUT_RDWR)
+                conn[0].close()
+                print(conn[1],': connection closed')
+            except Exception as err:
+                print('[184]',err)
+        print('All Connections Closed!')
 
     def sendFile(self,fileName,sock):
         with open(fileName,'rb') as f:
@@ -164,17 +200,26 @@ class Server:
 
 if __name__ == "__main__":
     printStart()
-    run = True
-    while run:
+    n = ''
+    defaults = [1, 9999, 1]
+    ques = [f'\tNUMBER OF PEERS:({defaults[0]})  ',f'\tPORT:({defaults[1]})  ',f'\tLEVEL TO PLAY:({defaults[2]}) ']
+    c = 0
+    while c < 3:
         try:
-            n = int(input('\tNUMBER OF PEERS: '))
+            e = input(ques[c])
+            n = int(e)
+            defaults[c] = n
+            c += 1
+        except:
+            if not e:
+                c += 1
+                continue
+            print('PLEASE ENTER VALID DATA:🙏')
             print("""
 SERVER STARTED!
 ---------------""")
-        except:
-            print('By how many Peers I meant, specify a number...')
-            continue
-        Server(n,8888,1)
-        run = True if input("restart server? (y/n) : ") == 'y' else False
+    myServer = Server(*defaults)
+    myServer.start()
+
 
 # received = [id, vec]
