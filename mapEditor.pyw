@@ -7,7 +7,7 @@ import pickle
 import settings
 from pygame.locals import *
 import SpriteImages
-SpriteImages = SpriteImages.SpriteImages()
+SpriteImages = SpriteImages.SpriteImages(local = True)
 import FontRenderer
 # make a click and go level editor
     # mouse over a block when left click... creates a block
@@ -22,7 +22,8 @@ class Block(pygame.sprite.Sprite):
         self.pos = pygame.math.Vector2(pos)
         self.value = int(value)
         self.level = level
-        self.sprites = SpriteImages.levels[level]
+        SpriteImages.convert()
+        self.sprites = SpriteImages.levelData
         self.image = self.sprites[self.value]
         #----------- UPDATING THE RECT ---------------------#
         self.rect = self.image.get_rect()
@@ -37,7 +38,7 @@ class MenuBlock(pygame.sprite.Sprite):
     def __init__(self, pos, _id,level):
         super().__init__()
         self.value = _id
-        self.sprites = SpriteImages.levels[level]
+        self.sprites = SpriteImages.levelData
         self.image = pygame.Surface((50,70),SRCALPHA)
         self.image.blit(self.sprites[self.value], (5,0))
         self.image.set_colorkey("#000000")
@@ -86,7 +87,7 @@ class MapEditor:
         if self.level is not None:
             self.path = r'./WorldData/Level ' +str(self.level)+ r'/'
             self.cam = pygame.math.Vector2(0,0)
-            self.sprites = SpriteImages.levels[self.level]
+            self.sprites = SpriteImages.levelData
 
             #------------------ Menu Blocks ----------------#
             self.menuBlocks = pygame.sprite.Group()
@@ -248,7 +249,7 @@ class MapEditor:
                 self.blockGroup.add(k)
 
     def addMenuBlocks(self):
-        L = len(SpriteImages.levels[self.level])
+        L = len(SpriteImages.levelData)
         p = 20
         c = 0
         for i in range(L):
@@ -402,9 +403,9 @@ class MapEditor:
 
     def startScreen(self):
         bg = pygame.transform.scale(pygame.image.load("./OtherData/map_editor.png"),self.display.get_size())
-        ques = FontRenderer.CenteredText('Map to Edit?',(500,300),textSize = 30,color='#101010')
-        warningNum = FontRenderer.CenteredText('*Level should be numeric',(700,500),color='#101010')
-        IN = FontRenderer.Button('   ',(900,300))
+        ques = FontRenderer.CenteredText('Map to Edit?',(640,300),textSize = 30,color='#101010')
+        warningNum = FontRenderer.CenteredText('*Level should be numeric',(640,500),color='#303030')
+        IN = FontRenderer.Button('   ',(640,400))
         level = ''
         running = True
         while running:
@@ -412,10 +413,10 @@ class MapEditor:
             IN.renderFonts(level)
             IN.draw(self.display)
             ques.draw(self.display)
-            pygame.display.update()
-            self.fpsClock.tick(fps)
             if not level.isnumeric():
                 warningNum.draw(self.display)
+            pygame.display.update()
+            self.fpsClock.tick(fps)
 
             for event in pygame.event.get():
                 if event.type == KEYDOWN:

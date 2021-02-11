@@ -19,6 +19,20 @@ from network import Network
 import server as server
 #from gameMenu import Menu
 
+class airBlock(pygame.sprite.Sprite):
+    def __init__(self,pos_start,x = None,y = None, pos_end = None):
+        self.value = -1 # -1 is reserved for airBlock
+        super().__init__()
+        if pos_end is not None:
+            px = pos_end[0] - pos_start[0]
+            py = pos_end[1] - pos_start[1]
+        else:
+            px = x
+            py = y
+        self.image = pygame.Surface((px,py))
+        self.image.set_colorkey('#000000')
+        self.rect = self.image.get_rect()
+        self.rect.topleft = pos_start
 
 class MenuBlocks(pygame.sprite.Sprite):
     def __init__(self,img,pos,val):
@@ -42,6 +56,7 @@ class Game:
         pygame.init()
         self.displaySize = self.settings.getDisplaySize()
         initDisplay()
+        pygame.mouse.set_visible(False)
         #self.screen = pygame.Surface((self.settings.width,self.settings.height))
         self.font = pygame.font.Font('./FontData/8-bit-pusab.ttf',12)
         self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))
@@ -194,7 +209,7 @@ class Game:
         self.updateAllPlayers()
         #---------------- MAP UPDATES ---------------#
         if self.player.rect.y >= self.settings.height * self.chunks[1]:
-            self.player.rect.topleft = random.choice([(0,0),(1000,0),(1700,0)])
+            self.player.rect.topleft = random.choice([(50,50),(1000,50),(1700,50)])
             self.player.physics.vel = pygame.math.Vector2(0.0,0.0)
 
     def updateAllPlayers(self):
@@ -241,13 +256,13 @@ class Game:
     
     def pause(self,events):
         self.setCamFocus(self.redundantAngel)
-        resume = pygame.image.load('./OtherData/resume.png').convert()
+        resume = pygame.transform.scale(pygame.image.load('./OtherData/resume.png').convert(),(280,90))
         resume.set_colorkey((0,0,0))
-        exit = pygame.image.load('./OtherData/exit.png').convert()
+        exit = pygame.transform.scale(pygame.image.load('./OtherData/exit.png').convert(),(280,90))
         exit.set_colorkey((0,0,0))
-        button_selected = pygame.image.load('./OtherData/select.png').convert()
+        button_selected = pygame.transform.scale(pygame.image.load('./OtherData/select.png').convert(),(280,90))
         button_selected.set_colorkey((0,0,0))
-        resumeCoords = FontRenderer.centerCoords(resume,(340,380))
+        resumeCoords = FontRenderer.centerCoords(resume,(340,420))
         exitCoords = FontRenderer.centerCoords(exit,(340,520))
         bg = pygame.Surface((self.settings.width,self.settings.height)).convert()
         bg.fill((30,30,30))
@@ -409,16 +424,18 @@ class Game:
 
     def gameSelect(self):
         while True:
-            bg = pygame.image.load('./OtherData/map_editor.png').convert()
+            bg = pygame.image.load('./OtherData/game_select.png').convert()
             selected = 9
             homeSprites = []
             self.gameGroup = pygame.sprite.Group()
             self.player.rect.top = -100
-            for i in [('join_game.png',(100,533),1),('host_game.png',(800,533),2),
-                    ('T.png',(632,154),4)]:
+            for i in [('join_game.png',(70,533),1),('host_game.png',(850,533),2)]:
                 x = MenuBlocks(i[0],i[1],i[2])
                 self.gameGroup.add(x)
-                homeSprites.append(x)
+                homeSprites.append(x) #16 68 = 84
+            self.gameGroup.add(airBlock((475,510),330,16))
+            self.gameGroup.add(airBlock((475,596),330,16))
+            self.gameGroup.add(airBlock((475,680),330,16))
 
             def changeSelected(x,selected):
                 for homeButton in self.gameGroup:
