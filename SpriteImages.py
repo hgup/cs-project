@@ -1,9 +1,9 @@
 import pygame
 import json
 class SpriteImages:
-    def __init__(self):
+    def __init__(self, local = False):
         self.readFile()
-        self.levels = [None]
+        self.local = local
         self.generateObjects()
 
     def readFile(self):
@@ -11,15 +11,21 @@ class SpriteImages:
             self.jsonFile = json.load(f)
 
     def generateObjects(self):
-        for levelNo in self.jsonFile:
-            levelData = [pygame.Surface((40,40))]
-            levelData[-1].set_colorkey("#000000")
-            path = self.jsonFile[levelNo]['path']
-            for image in self.jsonFile[levelNo]['images']:
-                levelData.append(pygame.image.load(path + image))
-                levelData[-1] = pygame.transform.scale(levelData[-1],(40,40))
-                levelData[-1].set_colorkey("#000000")
-            self.levels.append(levelData)
+        self.levelData = [pygame.Surface((40,40))]
+        self.levelData[-1].set_colorkey("#000000")
+        if self.local:
+            path = self.jsonFile['path']
+        else:
+            path = r'./MultiplayerData/resource_pack/'
+        for image in self.jsonFile['images']:
+            self.levelData.append(pygame.image.load(path + image))
+            self.levelData[-1] = pygame.transform.scale(self.levelData[-1],(40,40))
+            self.levelData[-1].set_colorkey("#000000")
+    
+    def convert(self):
+        for i,block in enumerate(self.levelData):
+            self.levelData[i] = block.convert()
+            
 
 
 """

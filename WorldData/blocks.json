@@ -1,35 +1,15 @@
 {
-    "1":{
-        "path":".//WorldData//Level 1//Sprites//World//",
+        "path":".//worldData//resource_pack//",
         "images":[
             "cyan_full block.png",
             "cyan_top left.png",
             "cyan_top right.png",
             "cyan_bottom right.png",
             "cyan_bottom left.png",
-            "cyan_t.png"
+            "yellow_full block.png",
+            "yellow_top left.png",
+            "yellow_top right.png",
+            "yellow_bottom right.png",
+            "yellow_bottom left.png"
         ]
-
-    },
-    "2":{
-        "path":".//WorldData//Level 2//Sprites//World//",
-        "images":[
-            "full block.png",
-            "top left.png",
-            "top right.png",
-            "bottom right.png",
-            "bottom left.png",
-            "t.png"
-        ]
-    },
-    "3":{
-        "path":".//WorldData//Level 3//Sprites//World//",
-        "images":[
-            "full block.png",
-            "top left.png",
-            "top right.png",
-            "bottom right.png",
-            "bottom left.png"
-        ]
-    }
 }

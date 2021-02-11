@@ -34,7 +34,6 @@ class Angel(pygame.sprite.Sprite):
         self.image.fill(self.settings.colors[color])
         self.rect = self.image.get_rect()
         self.rect.x,self.rect.y = pos
-        self.makeDevil()
         self.image.set_colorkey('#000000')
         # movement
         self.controls = controls[0]

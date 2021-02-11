@@ -1,1 +1,1 @@
-{"width": 1280, "height": 720, "fps": 60, "playerWidth": 20, "playerHeight": 20, "gravity": 0.5, "block_size": 32, "colors": ["#27ae60", "#e67e22", "#e06070", "#ec565c"], "base_acc": 0.3, "lastAddress": "localhost", "lastPort": 9070, "lastName": "Hursh", "bounds": 70}
+{"width": 1280, "height": 720, "fps": 60, "playerWidth": 20, "playerHeight": 20, "gravity": 0.5, "block_size": 32, "colors": ["#27ae60", "#e67e22", "#e06070", "#ec565c"], "base_acc": 0.3, "lastAddress": "localhost", "lastPort": 9999, "lastName": "Hursh", "bounds": 70}

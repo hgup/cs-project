@@ -12,7 +12,8 @@ class Block(pygame.sprite.Sprite):
         self.pos = pygame.math.Vector2(pos)
         self.value = int(value)
         self.level = level
-        self.sprites = SpriteImages.levels[level]
+        SpriteImages.convert()
+        self.sprites = SpriteImages.levelData
         self.image = self.sprites[self.value]
         #----------- UPDATING THE RECT ---------------------#
         self.rect = self.image.get_rect()
@@ -29,7 +30,8 @@ class Map:
         self.level = level
         #self.path = r'./WorldData/Level ' + str(level) +'/' 
         self.path = r'MultiplayerData/'
-        self.spriteImages = SpriteImages.levels[level]
+        SpriteImages.convert()
+        self.spriteImages = SpriteImages.levelData
         self.loadMap()
         self.dimensions = (self.chunks[0]*32,self.chunks[1]*18)
         self.map_coords_x = numpy.arange(self.dimensions[0]) * 40
@@ -41,7 +43,7 @@ class Map:
         self.loadSprites()
 
     def loadMap(self,fH = None):
-        self.bg = pygame.image.load(self.path+'bg.png')
+        self.bg = pygame.image.load(self.path+'bg.png').convert()
         with open(self.path +'map.dat', 'rb') as f:
             self.chunks = pickle.load(f)
             self.data = pickle.load(f)
