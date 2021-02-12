@@ -114,9 +114,17 @@ class Server(Thread):
         self.showAvailableId()
         print(f'[{myId}]',':thread ended')
 
-    def gameloop(self):
+    def newGame(self):
         while self.running:
+            if len(self.alivePlayers) == 1:
+                self.gameWon(self.alivePlayers[0])
+
+
+    def gameloop(self):
+        while True:
             pass
+            # events
+            # updates
 
     def control(self):
         self.zzz = ''

@@ -59,10 +59,12 @@ class Game:
         pygame.mouse.set_visible(False)
         #self.screen = pygame.Surface((self.settings.width,self.settings.height))
         self.font = pygame.font.Font('./FontData/8-bit-pusab.ttf',12)
-        self.screen = pygame.display.set_mode((self.settings.width,self.settings.height))
+        self.display = pygame.display.set_mode((self.settings.width,self.settings.height))
+        self.screen = pygame.Surface((self.settings.width, self.settings.height))
         self.fullscreen = False
         self.fpsClock = pygame.time.Clock()
         self.homeScreen()
+
 
     def newGame(self):
         while True:
@@ -89,6 +91,7 @@ class Game:
             #--------- LOADING STUFF ------------------------#
             self.playerGroup = pygame.sprite.Group()
             self.screen.blit(pygame.image.load('./OtherData/joining_game.png'),(0,0))
+            self.display.blit(self.screen,(0,0))
             pygame.display.update()
             #--------- SPRITE OVER NETWORK STUFF ------------#
             self.net = Network(self,self.address,self.port,self.name)
@@ -126,6 +129,8 @@ class Game:
             self.leftFocus = self.focus[0],self.focus[1],
             self.rightFocus = self.focus[0],self.focus[1],
             self.correction = [0,0] # bottom [0,200] top[0,-200]
+            self.notification_draw = False
+            self.lastNotification = "Welcome to The Game"
             self.mainloop()
             self.net.client.close()
             self.player.kill()
@@ -147,6 +152,7 @@ class Game:
             item = FontRenderer.CenteredText(text,(640,550), textSize = 25,color = '#303030')
             self.screen.blit(pygame.image.load('./OtherData/joining_game.png'),(0,0))
             item.draw(self.screen)
+            self.display.blit(self.screen,(0,0))
             pygame.display.update()
 
     def mainloop(self):
@@ -166,9 +172,26 @@ class Game:
             self.update()
             self.draw()
             # flip and tick
+            self.display.blit(self.screen,(0,0))
+            self.drawHud()
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
         self.threads = False
+
+    def notify(self):
+        self.notification = FontRenderer.CenteredText(self.lastNotification,(640,150), textSize = 30)
+        self.notification_draw = True
+        c = 250
+        while self.notification_draw:
+            if c <= 0:
+                self.notification_draw = False
+            c -= 5
+            self.notification.txt.set_alpha(c)
+            self.fpsClock.tick(30)
+
+    def drawHud(self):
+        if self.notification_draw:
+            self.notification.draw(self.display)
 
 
     def setCamFocus(self,entity,axes='both'):
@@ -243,8 +266,6 @@ class Game:
                 self.screen.blit(self.nameSurfs[player.id][0],
                         (player.rect.x + player.rect.width//2 - self.cam[0] - self.nameSurfs[player.id][1], player.rect.y - self.cam[1] - 25))
                 
-
-
     def draw(self):
         # fill with black
         self.screen.blit(self.bg,(0,0))
@@ -303,6 +324,7 @@ class Game:
                 self.screen.blit(button_selected,exitCoords)
 
             # flip and tick
+            self.display.blit(self.screen,(0,0))
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
 
@@ -314,6 +336,9 @@ class Game:
                 if event.key == K_F11:
                     self.fullscreen = not self.fullscreen
                     pygame.display.toggle_fullscreen()
+                if event.key == K_F6:
+                    if not self.notification_draw:
+                        _thread.start_new_thread(self.notify,())
             if event.type == KEYUP:
                 if event.key == K_RETURN: return K_RETURN
                 if event.key == K_ESCAPE: return K_ESCAPE
@@ -415,6 +440,7 @@ class Game:
             self.screen.blit(bg,(0,0))
             self.screen.blit(self.player.image,self.player.rect.topleft)
             self.homeGroup.draw(self.screen)
+            self.display.blit(self.screen,(0,0))
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
 
@@ -474,6 +500,7 @@ class Game:
                 self.screen.blit(bg,(0,0))
                 self.screen.blit(self.player.image,self.player.rect.topleft)
                 self.gameGroup.draw(self.screen)
+                self.display.blit(self.screen,(0,0))
                 pygame.display.update()
                 self.fpsClock.tick(self.settings.fps)
 
@@ -571,6 +598,7 @@ class Game:
             joinGroup.draw(self.screen)
             self.screen.blit(self.player.image,self.player.rect.topleft)
             self.fpsClock.tick(self.settings.fps)
+            self.display.blit(self.screen,(0,0))
             pygame.display.flip()
 
 
@@ -640,6 +668,7 @@ class Game:
             joinGroup.draw(self.screen)
             self.screen.blit(self.player.image,self.player.rect.topleft)
             self.fpsClock.tick(self.settings.fps)
+            self.display.blit(self.screen, (0,0))
             pygame.display.flip()
 
     def sorry(self,text,text2 = '',size= 25):
@@ -652,6 +681,7 @@ class Game:
             FontRenderer.CenteredText(text2,(640,400), textSize = 15).draw(self.screen)
         running = True
         messege.draw(self.screen)
+        self.display.blit(self.screen,(0,0))
         pygame.display.update()
         while running:
             for event in pygame.event.get():
