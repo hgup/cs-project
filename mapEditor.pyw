@@ -72,11 +72,13 @@ class MapEditor:
         self.alpha = 255
         self.displaySize = self.settings.getDisplaySize()
         self.game = game
+        print(game)
         if game is None:
             self.display = pygame.display.set_mode(self.displaySize,FULLSCREEN)
         else:
+            print('Using Current display')
             self.fullscreen = game.fullscreen
-            self.display = self.game.screen
+            self.display = self.game.display
         self.screen = pygame.Surface((self.settings.width + 200,self.settings.height + 50))
         self.canvas = pygame.Surface((self.settings.width,self.settings.height))
         self.fpsClock = pygame.time.Clock()

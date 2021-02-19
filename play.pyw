@@ -389,7 +389,9 @@ class Game:
         return s #the entity that collided last
 
     def editor(self):
+        print('entered here')
         editor = mapEditor.MapEditor(self)
+        print('done')
         self.homeScreen()
 
     def homeScreen(self):
@@ -443,7 +445,9 @@ class Game:
             self.display.blit(self.screen,(0,0))
             pygame.display.update()
             self.fpsClock.tick(self.settings.fps)
+        print('this is it')
 
+        print(selected)
         if selected != 3:
             actions[selected]()
         self.player.kill()
