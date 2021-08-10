@@ -10,8 +10,8 @@ import SpriteImages
 SpriteImages = SpriteImages.SpriteImages(local = True)
 import FontRenderer
 # make a click and go level editor
-    # mouse over a block when left click... creates a block
-    # mouce over with right click ... deletes a block
+# mouse over a block when left click... creates a block
+# mouce over with right click ... deletes a block
 
 #-------------------THE BASIC BLOCK------------------------#
 fps = 90
